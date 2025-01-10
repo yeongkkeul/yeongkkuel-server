@@ -17,3 +17,6 @@ spring:
         hbm2ddl:
           auto: create
         default_batch_fetch_size: 1000
+external:
+  jwt:
+    secret: ${JWT_SECRET_KEY:NMA8JPctFuna59f5}
