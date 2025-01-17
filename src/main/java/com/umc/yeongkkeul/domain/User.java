@@ -4,6 +4,7 @@ import com.umc.yeongkkeul.domain.common.BaseEntity;
 import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.enums.UserRole;
+import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
@@ -74,4 +75,9 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Reward> rewardList = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Message> messageList = new ArrayList<>();
 }
