@@ -5,6 +5,7 @@ import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.enums.UserRole;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
+import com.umc.yeongkkeul.domain.mapping.UserTerms;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
@@ -80,4 +81,13 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Message> messageList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<UserTerms> userTermList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Expense> expenseList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Category> categoryList = new ArrayList<>();
 }
