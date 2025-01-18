@@ -21,11 +21,11 @@ public class Purchase extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User userId;
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
-    private Item itemId;
+    private Item item;
 
     @Column(name = "type", nullable = false)
     private ItemType type;
