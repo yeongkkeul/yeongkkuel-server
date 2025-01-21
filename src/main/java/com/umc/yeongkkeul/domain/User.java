@@ -92,4 +92,15 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Category> categoryList = new ArrayList<>();
+
+    // 연관관계 편의 메서드 추가
+    public void addCategory(Category category) {
+        categoryList.add(category);
+        category.setUser(this);
+    }
+
+    public void removeCategory(Category category) {
+        categoryList.remove(category);
+        category.setUser(null);
+    }
 }

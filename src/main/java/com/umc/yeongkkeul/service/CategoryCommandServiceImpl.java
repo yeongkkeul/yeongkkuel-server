@@ -35,6 +35,7 @@ public class CategoryCommandServiceImpl implements CategoryCommandService{
             // 해당 유저가 이미 생성한 것들 중 중복ㅇㅣ 있는지
             throw new CategoryHandler(ErrorStatus.CATEGORY_DUPLICATE);
         }
+        user.addCategory(category);
         categoryRepository.save(category);
 
 
@@ -83,7 +84,7 @@ public class CategoryCommandServiceImpl implements CategoryCommandService{
             // 본인의 카테고리가 아니므로 권한 에러
             throw new CategoryHandler(ErrorStatus.CATEGORY_NO_PERMISSION);
         }
-
+        user.removeCategory(category);
         categoryRepository.deleteById(category.getId());
     }
 }
