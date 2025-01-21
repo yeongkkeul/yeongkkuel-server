@@ -11,4 +11,6 @@ public interface CategoryCommandService {
     // 삭제 - view 리턴
     void deleteCategory(Long categoryId, Long userId);
     // 수정
+    CategoryResponseDTO.CategoryViewDTO updateCategory(Long categoryId, CategoryRequestDTO.CategoryDTO request, Long userId);
+
 }

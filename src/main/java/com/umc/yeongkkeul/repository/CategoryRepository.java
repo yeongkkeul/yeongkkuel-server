@@ -1,8 +1,11 @@
 package com.umc.yeongkkeul.repository;
 
 import com.umc.yeongkkeul.domain.Category;
+import com.umc.yeongkkeul.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    boolean existsByName(String name);
+    // 유저와 이름 둘 다 만족하는 row가 있는지 확인
+    boolean existsByUserAndName(User user, String name);
+    boolean existsByUserAndNameAndIdNot(User user, String name, Long categoryId);
 }

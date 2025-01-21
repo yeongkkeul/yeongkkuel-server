@@ -30,6 +30,20 @@ public class CategoryController {
         return ApiResponse.onSuccess(response);
     }
 
+    @PatchMapping("/{categoryId}")
+    public ApiResponse<CategoryResponseDTO.CategoryViewDTO> updateCategory(
+            @PathVariable Long categoryId,
+            @RequestBody CategoryRequestDTO.CategoryDTO request
+    ) {
+        // JWT가 없으므로, 임시로 하드코딩된 userId 사용
+        // TODO : JWT를 통해 userID 가져오는 로직으로 변경
+        Long userId = 1L;
+
+        CategoryResponseDTO.CategoryViewDTO response = categoryCommandService.updateCategory(categoryId, request, userId);
+        return ApiResponse.onSuccess(response);
+    }
+
+
     @GetMapping("/{categoryId}")
     public ApiResponse<CategoryResponseDTO.CategoryViewDTO> viewCategory(
             @PathVariable Long categoryId
@@ -41,6 +55,8 @@ public class CategoryController {
         CategoryResponseDTO.CategoryViewDTO response = categoryQueryService.viewCategory(categoryId, userId);
         return ApiResponse.onSuccess(response);
     }
+
+
 
     @DeleteMapping("/{categoryId}")
     public ApiResponse<?> deleteCategory(@PathVariable Long categoryId) {
