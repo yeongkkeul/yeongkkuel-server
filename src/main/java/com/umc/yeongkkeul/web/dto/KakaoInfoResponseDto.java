@@ -12,7 +12,8 @@ public class KakaoInfoResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class KakaoInfoDTO{
-        String token;
+        String accessToken;
+        String refreshToken;
         String email;
         String redirectUrl;
 
