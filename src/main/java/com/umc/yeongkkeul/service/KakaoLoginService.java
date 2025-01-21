@@ -174,7 +174,7 @@ public class KakaoLoginService {
         }
 
         return KakaoInfoResponseDto.KakaoInfoDTO.builder()
-                .token(jwtToken)
+                .accessToken(jwtToken)
                 .email(email)
                 .redirectUrl(redirectUrl)
                 .build();
