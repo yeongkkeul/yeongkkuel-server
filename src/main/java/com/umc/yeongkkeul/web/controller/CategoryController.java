@@ -5,12 +5,13 @@ import com.umc.yeongkkeul.service.CategoryCommandService;
 import com.umc.yeongkkeul.service.CategoryQueryService;
 import com.umc.yeongkkeul.web.dto.CategoryRequestDTO;
 import com.umc.yeongkkeul.web.dto.CategoryResponseDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping("/api/category")
 @RequiredArgsConstructor
 @Validated
 public class CategoryController {
@@ -20,7 +21,7 @@ public class CategoryController {
 
     @PostMapping
     public ApiResponse<CategoryResponseDTO.CategoryViewDTO> createCategory(
-            @RequestBody CategoryRequestDTO.CategoryDTO request
+            @RequestBody @Valid CategoryRequestDTO.CategoryDTO request
     ) {
         // JWT가 없으므로, 임시로 하드코딩된 userId 사용
         // TODO : JWT를 통해 userID 가져오는 로직으로 변경
@@ -33,7 +34,7 @@ public class CategoryController {
     @PatchMapping("/{categoryId}")
     public ApiResponse<CategoryResponseDTO.CategoryViewDTO> updateCategory(
             @PathVariable Long categoryId,
-            @RequestBody CategoryRequestDTO.CategoryDTO request
+            @RequestBody @Valid CategoryRequestDTO.CategoryDTO request
     ) {
         // JWT가 없으므로, 임시로 하드코딩된 userId 사용
         // TODO : JWT를 통해 userID 가져오는 로직으로 변경
@@ -56,7 +57,7 @@ public class CategoryController {
         return ApiResponse.onSuccess(response);
     }
 
-
+  
 
     @DeleteMapping("/{categoryId}")
     public ApiResponse<?> deleteCategory(@PathVariable Long categoryId) {
