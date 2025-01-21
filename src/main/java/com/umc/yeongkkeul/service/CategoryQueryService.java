@@ -8,5 +8,5 @@ public interface CategoryQueryService {
     CategoryResponseDTO.CategoryViewDTO viewCategory(Long categoryId, Long userId);
 
     // 목록 조회
-
+    CategoryResponseDTO.CategoryViewListDTO viewCategories(Long userId);
 }

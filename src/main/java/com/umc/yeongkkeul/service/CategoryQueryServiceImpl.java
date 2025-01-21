@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -20,6 +22,18 @@ public class CategoryQueryServiceImpl implements CategoryQueryService{
 
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+
+    @Override
+    public CategoryResponseDTO.CategoryViewListDTO viewCategories(Long userId) {
+        // 유저 찾기, 없으면 에러
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        List<Category> categories = categoryRepository.findAllByUserId(userId);
+        if (categories.isEmpty()){ // 카테고리가 1개도 없는 경우
+            throw new CategoryHandler(ErrorStatus.CATEGORY_NOT_FOUND);
+        }
+        return CategoryConverter.toCategoriesViewDTO(categories);
+    }
 
     @Override
     public CategoryResponseDTO.CategoryViewDTO viewCategory(Long categoryId, Long userId) {

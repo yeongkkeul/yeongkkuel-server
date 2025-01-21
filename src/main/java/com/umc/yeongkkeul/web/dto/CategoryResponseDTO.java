@@ -27,7 +27,7 @@ public class CategoryResponseDTO {
     @AllArgsConstructor
     public static class CategoryViewListDTO{
         List<CategoryViewDTO> categoryList;
-        Long totalElements;
+        int totalElements;
     }
 
 }

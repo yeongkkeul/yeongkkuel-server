@@ -57,7 +57,16 @@ public class CategoryController {
         return ApiResponse.onSuccess(response);
     }
 
-  
+    @GetMapping("/categories")
+    public ApiResponse<CategoryResponseDTO.CategoryViewListDTO> viewCategories(){
+        // JWT가 없으므로, 임시로 하드코딩된 userId 사용
+        // TODO : JWT를 통해 userID 가져오는 로직으로 변경
+        Long userId = 1L;
+
+        CategoryResponseDTO.CategoryViewListDTO response = categoryQueryService.viewCategories(userId);
+        return ApiResponse.onSuccess(response);
+    }
+
 
     @DeleteMapping("/{categoryId}")
     public ApiResponse<?> deleteCategory(@PathVariable Long categoryId) {
