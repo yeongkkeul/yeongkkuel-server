@@ -4,5 +4,6 @@ public enum Job {
     STUDENT,
     EMPLOYEE,
     HOMEMAKER,
-    SELF_EMPLOYED
+    SELF_EMPLOYED,
+    UNDECIDED
 }
