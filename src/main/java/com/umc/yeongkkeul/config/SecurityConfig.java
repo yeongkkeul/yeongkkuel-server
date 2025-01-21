@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
@@ -16,6 +17,11 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.CorsUtils;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 import java.io.PrintWriter;
@@ -31,37 +37,34 @@ public class SecurityConfig
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    protected SecurityFilterChain filterChain(HttpSecurity http) {
-        try {
+    protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
+        http
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",   // Swagger 3 documentation endpoint
+                                "/swagger-ui/**",     // Swagger UI endpoint
+                                "/swagger-resources/**",
+                                "/swagger-ui.html",
+                                "/webjars/**",        // Webjars used by Swagger UI
+                                "/api/auth/**",         // 카카오 로그인 엔드포인트
+                                "/api/logout" // 로그아웃 엔드포인트
+                        ).permitAll() // Swagger 경로 허용
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(sessionManagement ->
+                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint(unauthorizedEntryPoint) // 인증 실패 핸들러
+                );
 
-            http.csrf(AbstractHttpConfigurer::disable)
-                    .httpBasic(AbstractHttpConfigurer::disable)
-                    .cors(Customizer.withDefaults())
-                    .sessionManagement((sessionManagement) ->
-                            sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                    )
+        // JWT 필터 추가
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-                    .authorizeHttpRequests((authorizeRequests) ->
-                            authorizeRequests.requestMatchers("/health","/users/auth/**",
-                                            "/v3/api-docs/**", "/swagger-ui/**", "/swagger-resources/**").permitAll()
-
-                                    .anyRequest().authenticated()
-                    )
-                    .exceptionHandling((exceptionConfig) ->
-                            exceptionConfig
-                                    .authenticationEntryPoint(unauthorizedEntryPoint)
-                    ); // 401 403 관련 예외처리
-            ;
-            http.addFilterAfter(
-                    jwtAuthenticationFilter,
-                    CorsFilter.class
-            );
-            return http.build();
-        } catch (Exception e) {
-
-            throw new RuntimeException(e);
-        }
-
+        return http.build();
     }
 
     private final AuthenticationEntryPoint unauthorizedEntryPoint =
@@ -77,5 +80,18 @@ public class SecurityConfig
                 writer.flush();
 
             };
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.addAllowedOriginPattern("*");
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
 }
