@@ -7,12 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+// 카테고리 객체 -> res
 public class CategoryResponseDTO {
     @Builder
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CategoryViewDTO{
+        Long categoryId;
         String categoryName;
         int red;
         int green;
