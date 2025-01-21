@@ -17,22 +17,31 @@ public class TokenProvider { // 현재는 userId 기반 jwt 토큰 발행 -> 추
     @Value("${external.jwt.secret}")
     private String SECRET_KEY;
 
-    public String create(User user){
+    public String genrateToken(String email){
         Date expiryDate=Date.from(Instant.now().plus(1, ChronoUnit.DAYS));
         return Jwts.builder()
                 .signWith(SignatureAlgorithm.HS512,SECRET_KEY)
-                .setSubject(user.getId().toString()) // String으로 변환함!
+                .setSubject(email)
                 .setIssuer("yeongkkeul app")
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
                 .compact();
     }
 
-    public String validateAndGetUserId(String token){
+    public String getEmailFromToken(String token){
         Claims claims= Jwts.parser()
                 .setSigningKey(SECRET_KEY)
                 .parseClaimsJws(token)
                 .getBody();
         return claims.getSubject();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.umc.yeongkkeul.domain.enums;
 
 public enum AgeGroup {
+    UNDECIDED,
     TEENAGER,
     TWENTIES,
     THIRTIES,
