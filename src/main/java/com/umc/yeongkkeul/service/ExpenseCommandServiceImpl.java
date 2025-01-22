@@ -1,6 +1,7 @@
 package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.handler.CategoryHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.ExpenseConverter;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class ExpenseServiceImpl extends ExpenseService{
+public class ExpenseCommandServiceImpl extends ExpenseCommandService {
 
     private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
@@ -26,14 +27,20 @@ public class ExpenseServiceImpl extends ExpenseService{
 
     // 유저의 지출 내역 생성
     @Override
-    public Expense createExpense(Long userId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
+    public Expense createExpense(String userEmail, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
         // 유저 찾기
-        User user = userRepository.findById(userId)
+        System.out.println("user는 "+ userEmail);
+        User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기
         Category category = categoryRepository.findByName(categoryName)
                 .orElseThrow(() -> new ExpenseHandler(ErrorStatus.EXPENSE_CATEGORY_NOT_FOUND));
+
+        // 권한 검증: 카테고리 주인이 현재 유저인지
+        if (!category.getUser().getId().equals(user.getId())) {
+            throw new CategoryHandler(ErrorStatus.CATEGORY_NO_PERMISSION);
+        }
 
         // 지출액이 음수일 경우 에러
         if (request.getAmount() < 0){
@@ -49,14 +56,19 @@ public class ExpenseServiceImpl extends ExpenseService{
 
     // 유저의 지출 내역 수정
     @Override
-    public Expense updateExpense(Long userId, Long expenseId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
+    public Expense updateExpense(String userEmail, Long expenseId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
         // 유저 찾기
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기
         Category category = categoryRepository.findByName(categoryName)
                 .orElseThrow(() -> new ExpenseHandler(ErrorStatus.EXPENSE_CATEGORY_NOT_FOUND));
+
+        // 권한 검증: 카테고리 주인이 현재 유저인지
+        if (!category.getUser().getId().equals(user.getId())) {
+            throw new CategoryHandler(ErrorStatus.CATEGORY_NO_PERMISSION);
+        }
 
         // 유저의 지출 내역 기록 찾기 (존재하는지)
         Expense expense = expenseRepository.findById(expenseId)
@@ -78,9 +90,9 @@ public class ExpenseServiceImpl extends ExpenseService{
     }
 
     @Override
-    public void deleteExpense(Long userId, Long expenseId){
+    public void deleteExpense(String userEmail, Long expenseId){
         // 유저 찾기
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기

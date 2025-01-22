@@ -61,8 +61,10 @@ dependencies {
 
 	implementation 'io.swagger.core.v3:swagger-core:2.2.10'
 
-
-
+	// Could not find io.jsonwebtoken:jjwt-impl:0.9.1. 에러
+	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.11.2'
+	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.2'
+	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.2'
 
 
 
