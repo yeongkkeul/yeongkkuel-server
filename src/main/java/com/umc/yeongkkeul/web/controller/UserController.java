@@ -2,8 +2,11 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.security.TokenProvider;
+import com.umc.yeongkkeul.service.AuthCommandService;
 import com.umc.yeongkkeul.service.KakaoLoginService;
 import com.umc.yeongkkeul.web.dto.KakaoInfoResponseDto;
+import com.umc.yeongkkeul.web.dto.TokenDto;
+import com.umc.yeongkkeul.web.dto.TokenRequestDto;
 import com.umc.yeongkkeul.web.dto.UserRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +25,10 @@ public class UserController {
 
     @Autowired
     private KakaoLoginService kakaoLoginService;
-
     @Autowired
     private TokenProvider tokenProvider;
+    @Autowired
+    private AuthCommandService authCommandService;
 
     //카카오
     @GetMapping("/auth/kakao-login/")
@@ -40,10 +44,13 @@ public class UserController {
             return ApiResponse.onFailure("4000", "Email not found in Kakao account", null);
         }
 
-        String jwtToken = tokenProvider.genrateToken(email).getAccessToken();
-        String refreshToken = tokenProvider.genrateToken(email).getRefreshToken();
+        TokenDto tokenDto = tokenProvider.genrateToken(email);
 
-        KakaoInfoResponseDto.KakaoInfoDTO kakaoInfoDTO = kakaoLoginService.loginUserInfo(jwtToken,email,name);
+        String jwtToken = tokenDto.getAccessToken();
+        String refreshToken = tokenDto.getRefreshToken();
+
+
+        KakaoInfoResponseDto.KakaoInfoDTO kakaoInfoDTO = kakaoLoginService.loginUserInfo(jwtToken,refreshToken,email,name);
 
         return ApiResponse.onSuccess(kakaoInfoDTO);
     }
@@ -60,5 +67,11 @@ public class UserController {
 //    public ApiResponse<?> saveUserInfo(@RequestBody UserRequestDto.userInfoDto userInfoDto){
 //
 //    }
+
+    @Operation(summary = "토큰 재발급")
+    @PostMapping("/reissue")
+    public ResponseEntity<TokenDto> reissue(@RequestBody TokenRequestDto tokenRequestDto) {
+        return ResponseEntity.ok(authCommandService.reissue(tokenRequestDto));
+    }
 
 }

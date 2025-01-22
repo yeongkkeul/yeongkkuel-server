@@ -151,7 +151,7 @@ public class KakaoLoginService {
         return userInfo;
     }
 
-    public KakaoInfoResponseDto.KakaoInfoDTO loginUserInfo(String jwtToken,String email,String name){
+    public KakaoInfoResponseDto.KakaoInfoDTO loginUserInfo(String jwtToken, String refreshToken, String email,String name){
 
         boolean isExistUser = userRepository.existsByEmail(email);
 
@@ -164,7 +164,7 @@ public class KakaoLoginService {
                     .job(Job.UNDECIDED)
                     .userRole(UserRole.USER)
                     .oauthType("KAKAO")
-                    .oauthKey(jwtToken)
+                    .oauthKey(refreshToken)
                     .gender("UNDECIDED")
                     .ageGroup(AgeGroup.UNDECIDED)
                     .rewardBalance(0)
@@ -175,6 +175,7 @@ public class KakaoLoginService {
 
         return KakaoInfoResponseDto.KakaoInfoDTO.builder()
                 .accessToken(jwtToken)
+                .refreshToken(refreshToken)
                 .email(email)
                 .redirectUrl(redirectUrl)
                 .build();
