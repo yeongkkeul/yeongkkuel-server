@@ -5,11 +5,14 @@ import com.umc.yeongkkeul.service.MyPageCommandService;
 import com.umc.yeongkkeul.service.MyPageQueryService;
 import com.umc.yeongkkeul.web.dto.MyPageInfoRequestDto;
 import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
+import com.umc.yeongkkeul.web.dto.RewardResponseDto;
 import com.umc.yeongkkeul.web.dto.UserReferralCodeResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -37,5 +40,11 @@ public class MyPageController {
     @PatchMapping("/api/mypage")
     public ApiResponse<MyPageInfoResponseDto> updateUserInfo(@RequestParam Long userId, @RequestBody MyPageInfoRequestDto myPageInfoRequestDto) {
         return ApiResponse.onSuccess(myPageCommandService.updateUserInfo(userId, myPageInfoRequestDto));
+    }
+
+    @Operation(summary = "리워드 목록 조회")
+    @GetMapping("/api/rewards")
+    public ApiResponse<List<RewardResponseDto>> getRewardList(@RequestParam Long userId) {
+        return ApiResponse.onSuccess(myPageQueryService.getRewardList(userId));
     }
 }

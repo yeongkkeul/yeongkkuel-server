@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -27,6 +28,7 @@ public class MyPageQueryService {
 
     private final UserRepository userRepository;
     private final ExpenseRepository expenseRepository;
+    private final RewardRepository rewardRepository;
 
     // 추천인 코드 조회
     public UserReferralCodeResponseDto getUserReferralCode(Long userId) {
@@ -77,5 +79,21 @@ public class MyPageQueryService {
         }
         double weeklyAchievementRate = (achievedDays / ((double) Period.between(startDay, endDay).getDays()+1)) *100;
         return Math.round(weeklyAchievementRate*10) / 10.0;
+    }
+
+    // 리워드 목록 조회
+    public List<RewardResponseDto> getRewardList(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+
+        List<Reward> rewards = rewardRepository.findByUser(user);
+        List<RewardResponseDto> rewardList = new ArrayList<>();
+        for (Reward reward : rewards) {
+            RewardResponseDto dto = RewardResponseDto.from(reward);
+            rewardList.add(dto);
+        }
+
+        return rewardList;
     }
 }

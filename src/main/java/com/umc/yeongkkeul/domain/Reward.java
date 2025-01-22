@@ -1,6 +1,7 @@
 package com.umc.yeongkkeul.domain;
 
 import com.umc.yeongkkeul.domain.common.BaseEntity;
+import com.umc.yeongkkeul.domain.enums.ReasonCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
@@ -23,8 +24,9 @@ public class Reward extends BaseEntity {
     @Column(name = "amount", nullable = false)
     private int amount;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "reason_code", nullable = false, length = 50)
-    private String reasonCode;
+    private ReasonCode reasonCode;
 
     @Column(name = "description", length = 255)
     private String description;
