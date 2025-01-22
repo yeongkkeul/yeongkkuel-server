@@ -21,7 +21,13 @@ public enum ErrorStatus implements BaseErrorCode {
 
     //JWT
     _INVALID_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "USER4003", "유효하지 않은 토큰입니다."),
-    _INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "USER4004", "유효하지 않은 토큰입니다.");
+    _INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "USER4004", "유효하지 않은 토큰입니다."),
+
+    //USER
+    _USER_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4005","사용자를 찾을 수 없습니다."),
+    _REFERRALCODE_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4004","존재하지 않은 추천인 코드입니다.");
+
+
 
     private final HttpStatus httpStatus;
     private final String code;

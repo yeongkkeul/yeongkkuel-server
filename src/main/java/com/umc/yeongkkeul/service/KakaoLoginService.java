@@ -10,6 +10,7 @@ import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.enums.UserRole;
+import com.umc.yeongkkeul.repository.UserTermsRepository;
 import com.umc.yeongkkeul.web.dto.KakaoInfoResponseDto;
 import com.umc.yeongkkeul.web.dto.KakaoTokenResponseDto;
 import com.umc.yeongkkeul.repository.UserRepository;
@@ -34,6 +35,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.HashMap;
 
 @Slf4j
@@ -55,6 +57,8 @@ public class KakaoLoginService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserTermsRepository userTermsRepository;
 
     @Transactional
     public String getKakaoAccessToken(String code) {
@@ -154,9 +158,11 @@ public class KakaoLoginService {
     public KakaoInfoResponseDto.KakaoInfoDTO loginUserInfo(String jwtToken, String refreshToken, String email,String name){
 
         boolean isExistUser = userRepository.existsByEmail(email);
+        boolean isExistTerms = userTermsRepository.existsByUser_Email(email);
 
-        String redirectUrl = isExistUser ? "/api/home" : "/api/auth/user-info";
+        String redirectUrl = isExistTerms ? "/api/home" : "/api/auth/user-info";
 
+        //초기 사용자 값 저장(kakao 정보)
         if(!isExistUser){
             User user = User.builder()
                     .nickname(name)
@@ -164,8 +170,10 @@ public class KakaoLoginService {
                     .job(Job.UNDECIDED)
                     .userRole(UserRole.USER)
                     .oauthType("KAKAO")
+                    .referralCode(generateRandomCode(6))
                     .oauthKey(refreshToken)
                     .gender("UNDECIDED")
+
                     .ageGroup(AgeGroup.UNDECIDED)
                     .rewardBalance(0)
                     .build();
@@ -179,6 +187,20 @@ public class KakaoLoginService {
                 .email(email)
                 .redirectUrl(redirectUrl)
                 .build();
+    }
+
+    public static String generateRandomCode(int length) {
+        // 가능한 문자 세트: 영문 대소문자 + 숫자
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom(); // 보안적으로 강력한 랜덤 생성기
+        StringBuilder code = new StringBuilder();
+
+        for (int i = 0; i < length; i++) {
+            int index = random.nextInt(chars.length());
+            code.append(chars.charAt(index));
+        }
+
+        return code.toString();
     }
 
 }
