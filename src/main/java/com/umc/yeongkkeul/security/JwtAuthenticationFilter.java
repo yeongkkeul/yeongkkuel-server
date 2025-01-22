@@ -29,15 +29,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
-            String token = parseBearerToken(request);
-            log.info("Filter is running...");
+            String token = resolveToken(request);
 
             if(token != null && !token.equalsIgnoreCase("null")) {
-                String userId = tokenProvider.validateAndGetUserId(token);
-                log.info("Authenticated user ID: " + userId);
+                String userEmail = tokenProvider.getEmailFromToken(token);
+                log.info("Authenticated user ID: " + userEmail);
 
                 AbstractAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userId,
+                        userEmail,
                         null,
                         AuthorityUtils.NO_AUTHORITIES
                 );
@@ -57,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     }
 
-    private String parseBearerToken(HttpServletRequest request) {
+    private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
 
         if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {

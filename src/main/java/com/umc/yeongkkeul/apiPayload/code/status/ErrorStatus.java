@@ -22,6 +22,11 @@ public enum ErrorStatus implements BaseErrorCode {
     // User
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "USER4001", "사용자를 찾을 수 없습니다."),
 
+    // Category
+    CATEGORY_DUPLICATE(HttpStatus.CONFLICT, "CATEGORY4004", "동일한 카테고리가 이미 존재합니다."),
+    CATEGORY_NO_PERMISSION(HttpStatus.FORBIDDEN, "CATEGORY4002", "해당 카테고리에 대한 접근 권한이 없습니다."),
+    CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "CATEGORY4001", "카테고리를 찾을 수 없습니다."),
+
     // Expense
     EXPENSE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4001", "지출 내역을 찾을 수 없습니다."),
     EXPENSE_AMOUNT_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4002", "지출 금액이 유효하지 않습니다.."),
