@@ -69,6 +69,9 @@ public class User extends BaseEntity {
     @Column(name = "inactive_date")
     private LocalDateTime inactiveDate;
 
+    @Column(name = "profile_url")
+    private String imageUrl;
+
     @Column(name = "day_target_expenditure")
     private Integer dayTargetExpenditure; // 널 허용이기에 Wrapper 객체 사용
 
@@ -102,5 +105,13 @@ public class User extends BaseEntity {
     public void removeCategory(Category category) {
         categoryList.remove(category);
         category.setUser(null);
+    }
+
+    public void updateProfile(String nickname, String gender, AgeGroup ageGroup, Job job, String profileImageUrl) {
+        this.nickname = nickname;
+        this.gender = gender;
+        this.ageGroup = ageGroup;
+        this.job = job;
+        this.imageUrl = profileImageUrl;
     }
 }
