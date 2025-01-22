@@ -6,9 +6,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.umc.yeongkkeul.apiPayload.code.BaseCode;
 import com.umc.yeongkkeul.apiPayload.code.status.SuccessStatus;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Builder
 @AllArgsConstructor
 @JsonPropertyOrder({"isSuccess", "code", "message", "result"})
 public class ApiResponse<T> {

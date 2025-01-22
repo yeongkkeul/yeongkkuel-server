@@ -1,6 +1,7 @@
 package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
+
 import com.umc.yeongkkeul.security.TokenProvider;
 import com.umc.yeongkkeul.service.KakaoLoginService;
 import com.umc.yeongkkeul.web.dto.KakaoInfoResponseDto;
@@ -25,6 +26,7 @@ public class UserController {
 
     @Autowired
     private TokenProvider tokenProvider;
+  
 
     //카카오
     @GetMapping("/auth/kakao-login/")

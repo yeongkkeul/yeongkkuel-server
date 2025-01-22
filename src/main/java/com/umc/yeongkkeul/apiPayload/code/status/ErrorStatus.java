@@ -17,7 +17,15 @@ public enum ErrorStatus implements BaseErrorCode {
     _FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON403", "금지된 요청입니다."),
 
     // For test
-    TEMP_EXCEPTION(HttpStatus.BAD_REQUEST, "TEMP4001", "테스트 용도");
+    TEMP_EXCEPTION(HttpStatus.BAD_REQUEST, "TEMP4001", "테스트 용도"),
+
+    // User
+    USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "USER4001", "사용자를 찾을 수 없습니다."),
+
+    // Category
+    CATEGORY_DUPLICATE(HttpStatus.CONFLICT, "CATEGORY4004", "동일한 카테고리가 이미 존재합니다."),
+    CATEGORY_NO_PERMISSION(HttpStatus.FORBIDDEN, "CATEGORY4002", "해당 카테고리에 대한 접근 권한이 없습니다."),
+    CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "CATEGORY4001", "카테고리를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

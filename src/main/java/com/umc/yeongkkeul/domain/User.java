@@ -7,6 +7,7 @@ import com.umc.yeongkkeul.domain.enums.UserRole;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import com.umc.yeongkkeul.domain.mapping.UserTerms;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -52,6 +53,7 @@ public class User extends BaseEntity {
     @Column(name = "job", nullable = false)
     private Job job;
 
+    @Email
     @Column(name = "email", length = 100)
     private String email;
 
@@ -90,4 +92,15 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Category> categoryList = new ArrayList<>();
+
+    // 연관관계 편의 메서드 추가
+    public void addCategory(Category category) {
+        categoryList.add(category);
+        category.setUser(this);
+    }
+
+    public void removeCategory(Category category) {
+        categoryList.remove(category);
+        category.setUser(null);
+    }
 }
