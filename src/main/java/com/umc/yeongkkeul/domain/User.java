@@ -90,4 +90,10 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Category> categoryList = new ArrayList<>();
+
+    // 유저의 지출 내역 삭제
+    public void removeExpense(Expense expense) {
+        expenseList.remove(expense);
+        expense.setUser(null);
+    }
 }

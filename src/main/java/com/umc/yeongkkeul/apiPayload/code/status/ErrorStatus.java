@@ -17,7 +17,15 @@ public enum ErrorStatus implements BaseErrorCode {
     _FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON403", "금지된 요청입니다."),
 
     // For test
-    TEMP_EXCEPTION(HttpStatus.BAD_REQUEST, "TEMP4001", "테스트 용도");
+    TEMP_EXCEPTION(HttpStatus.BAD_REQUEST, "TEMP4001", "테스트 용도"),
+
+    // User
+    USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "USER4001", "사용자를 찾을 수 없습니다."),
+
+    // Expense
+    EXPENSE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4001", "지출 내역을 찾을 수 없습니다."),
+    EXPENSE_AMOUNT_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4002", "지출 금액이 유효하지 않습니다.."),
+    EXPENSE_CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4002", "유효하지 않은 지출 카테고리입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
