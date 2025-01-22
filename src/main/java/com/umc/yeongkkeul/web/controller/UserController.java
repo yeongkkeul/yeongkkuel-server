@@ -1,30 +1,66 @@
 package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
-import com.umc.yeongkkeul.service.UserCommandService;
+
+import com.umc.yeongkkeul.security.TokenProvider;
+import com.umc.yeongkkeul.service.KakaoLoginService;
+import com.umc.yeongkkeul.web.dto.KakaoInfoResponseDto;
+import com.umc.yeongkkeul.web.dto.UserRequestDto;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 
 @RestController
-@RequestMapping("/api/user")
 @RequiredArgsConstructor
-@Validated
+@Slf4j
+@RequestMapping("/api")
 public class UserController {
 
-    private final UserCommandService userCommandService;
+    @Autowired
+    private KakaoLoginService kakaoLoginService;
 
-    @DeleteMapping("/{userId}")
-    public ApiResponse<?> deleteUser(@PathVariable Long userId) {
-        userCommandService.deleteUser(userId);
+    @Autowired
+    private TokenProvider tokenProvider;
+  
 
-        return ApiResponse.builder()
-                .isSuccess(true)
-                .code("2000")
-                .message("해당 유저와 연관된 데이터가 삭제되었습니다.")
-                .build();
+    //카카오
+    @GetMapping("/auth/kakao-login/")
+    @Operation(summary = "카카오 로그인", description = "카카오 로그인 GET")
+    public ApiResponse<KakaoInfoResponseDto.KakaoInfoDTO> kakakoLogin(@RequestParam String code){
+        String accessToken = kakaoLoginService.getKakaoAccessToken(code);
+
+        HashMap<String, Object> userInfo = kakaoLoginService.getUserInfo(accessToken);
+
+        String email = userInfo.get("email").toString();
+        String name = userInfo.get("nickname").toString();
+        if (email == null) {
+            return ApiResponse.onFailure("4000", "Email not found in Kakao account", null);
+        }
+
+        String jwtToken = tokenProvider.genrateToken(email).getAccessToken();
+        String refreshToken = tokenProvider.genrateToken(email).getRefreshToken();
+
+        KakaoInfoResponseDto.KakaoInfoDTO kakaoInfoDTO = kakaoLoginService.loginUserInfo(jwtToken,email,name);
+
+        return ApiResponse.onSuccess(kakaoInfoDTO);
     }
+
+
+    //구글
+
+
+
+
+    //사용자 정보기입
+//    @PutMapping("/auth/user-info")
+//    @Operation(summary = "사용자 정보 기입", description = "사용자 정보기입 소셜 로그인 후 기본 정보 저장하고 PUT으로 값 추가하는 형태")
+//    public ApiResponse<?> saveUserInfo(@RequestBody UserRequestDto.userInfoDto userInfoDto){
+//
+//    }
+
 }
