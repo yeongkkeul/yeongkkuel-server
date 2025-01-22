@@ -35,7 +35,7 @@ public class TestDataInitializer implements CommandLineRunner {
                     .rewardBalance(0)
                     .status(true)
                     .inactiveDate(null)
-                    .dayTargetExpenditure(null)
+                    .dayTargetExpenditure(20000)
                     .notificationAgreed(true)
                     .build();
 
