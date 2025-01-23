@@ -18,7 +18,4 @@ public class ExpenseConverter {
                 .category(category)
                 .build();
     }
-
-
-
 }

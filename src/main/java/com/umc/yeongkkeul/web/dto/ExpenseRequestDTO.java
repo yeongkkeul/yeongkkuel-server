@@ -12,13 +12,8 @@ public class ExpenseRequestDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ExpenseDTO {
-        // 이 부분은 유저 로그인 로직 완성 후에 수정 예정
-        // @NotNull(message = "userID는 필수입니다.")
-        // private Long userId;  // userId 추가
-
         @NotNull(message = "날짜 작성은 필수입니다.")
         private LocalDate day;
-//        private LocalDateTime day;
 
         @NotNull(message = "카테고리 작성은 필수입니다.")
         private String category;

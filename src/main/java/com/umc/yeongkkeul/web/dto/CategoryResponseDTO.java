@@ -30,4 +30,12 @@ public class CategoryResponseDTO {
         int totalElements;
     }
 
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CategoryViewListWithHomeDTO{
+        String categoryName;
+        List<ExpenseResponseDTO.ExpenseListViewDTO> expenses;
+    }
 }

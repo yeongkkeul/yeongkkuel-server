@@ -5,6 +5,7 @@ import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.enums.UserRole;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
+import com.umc.yeongkkeul.domain.mapping.Purchase;
 import com.umc.yeongkkeul.domain.mapping.UserTerms;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -60,6 +61,7 @@ public class User extends BaseEntity {
     @Column(name = "referral_code", length = 6)
     private String referralCode;
 
+    // 보유 리워드
     @Column(name = "reward_balance", nullable = false)
     private int rewardBalance;
 
