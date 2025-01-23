@@ -18,11 +18,11 @@ public class FindLoginUser {
 
     public static String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if ((authentication != null) && (authentication.getPrincipal() instanceof UserDetails)) {
+        if ((authentication != null)) {
             String userName = authentication.getName();
             if (userRepository.existsByEmail(userName)) {
-                String memberEmail = userRepository.findByEmail(userName).get().getEmail();
-                return memberEmail;
+                String userEmail = userRepository.findByEmail(userName).get().getEmail();
+                return userEmail;
             }
 
         }

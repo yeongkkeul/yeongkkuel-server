@@ -15,9 +15,6 @@ public class UserRequestDto {
         private String gender;
         private AgeGroup ageGroup;
         private Job job;
-        private String referralCode;
-
-
     }
 
     @Builder
@@ -25,10 +22,17 @@ public class UserRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TermDTO {
-        private String term1;
-        private String term2;
-        private String term3;
-        private String term4;
+        private Boolean term1;
+        private Boolean term2;
+        private Boolean term3;
+        private Boolean term4;
+    }
 
+    @Builder
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReferralCodeRequestDto{
+        private String referralCode;
     }
 }
