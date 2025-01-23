@@ -12,10 +12,12 @@ public class ExpenseResponseDTO {
     // @AllArgsConstructor
     public static class ExpenseListViewDTO {
         private Long expenseId;
+        String content;
         private Integer amount;
 
-        public ExpenseListViewDTO(Long expenseId, Integer amount) {
+        public ExpenseListViewDTO(Long expenseId, String content, Integer amount) {
             this.expenseId = expenseId;
+            this.content = content;
             this.amount = amount;
         }
     }

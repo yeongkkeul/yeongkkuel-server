@@ -26,30 +26,6 @@ public class FindLoginUser {
             }
 
         }
-        /*
-        if (authentication != null) {
-            Object principal = authentication.getPrincipal();
-            if (principal instanceof UserDetails) {
-                // UserDetails 타입인 경우
-                String userName = authentication.getName();
-                log.error("user의 이메일은 " + userName);
-                if (userRepository.existsByEmail(userName)) {
-                    String memberEmail = userRepository.findByEmail(userName).get().getEmail();
-                    log.error("user의 이메일은 " + memberEmail);
-                    return memberEmail;
-                }
-            } else if (principal instanceof String) {
-                // String 타입인 경우 (예: 이메일)
-                String userName = (String) principal;
-                log.error("user의 이메일은 " + userName);
-                if (userRepository.existsByEmail(userName)) {
-                    String memberEmail = userRepository.findByEmail(userName).get().getEmail();
-                    log.error("user의 이메일은 " + memberEmail);
-                    return memberEmail;
-                }
-            }
-        }
-         */
         return null;
     }
 }

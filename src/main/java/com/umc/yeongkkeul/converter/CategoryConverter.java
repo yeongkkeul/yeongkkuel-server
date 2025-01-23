@@ -52,7 +52,7 @@ public class CategoryConverter {
                                 .filter(expense -> expense.getUser().equals(user) // 유저의 지출만!
                                          && expense.getDay().equals(today))  // 그중에서도 today 지출만!!
                                 .map(expense -> new ExpenseResponseDTO.ExpenseListViewDTO(
-                                        expense.getId(), expense.getAmount()))
+                                        expense.getId(), expense.getContent(), expense.getAmount()))
                                 .collect(Collectors.toList())
                 ))
                 .collect(Collectors.toList());
