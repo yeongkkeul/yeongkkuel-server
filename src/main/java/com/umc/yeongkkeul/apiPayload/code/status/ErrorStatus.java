@@ -27,6 +27,14 @@ public enum ErrorStatus implements BaseErrorCode {
     CATEGORY_NO_PERMISSION(HttpStatus.FORBIDDEN, "CATEGORY4002", "해당 카테고리에 대한 접근 권한이 없습니다."),
     CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "CATEGORY4001", "카테고리를 찾을 수 없습니다."),
 
+    //JWT
+    _INVALID_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "USER4003", "유효하지 않은 토큰입니다."),
+    _INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "USER4004", "유효하지 않은 토큰입니다."),
+
+    //USER
+    _USER_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4005","사용자를 찾을 수 없습니다."),
+    _REFERRALCODE_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4004","존재하지 않은 추천인 코드입니다."),
+
     // Expense
     EXPENSE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4001", "지출 내역을 찾을 수 없습니다."),
     EXPENSE_AMOUNT_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4002", "지출 금액이 유효하지 않습니다.."),

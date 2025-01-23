@@ -22,7 +22,6 @@ external:
   jwt:
     secret: ${JWT_SECRET_KEY:9aa2cf78df2db0445735e0bea567dba2d7a34faa668837d887bbcc8b45a125426c96e179685f61ce890c1d0a8f76234547ab6419c4c5e688203dedfff3436b56}
 
-
 kakao:
   redirect-url: https://localhost:8080/login/oauth2/callback/kakao
   client-id: fe77c1e2a8b0f7109d34793397225fef
