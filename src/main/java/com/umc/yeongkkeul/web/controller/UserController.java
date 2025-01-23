@@ -77,6 +77,18 @@ public class UserController {
 
     }
 
+
+    //추천인 코드 입력
+    @PostMapping("/api/recommend-code")
+    @Operation(summary="추천인 코드 입력",description = "추천인 코드 입력(없는 코드인 경우 에러 발생), 일치(true),null인 경우(false)")
+    public ApiResponse<?> checkReferralCode(@RequestBody UserRequestDto.ReferralCodeRequestDto referralCodeRequestDto){
+        String email = FindLoginUser.getCurrentUserId();
+
+        boolean checkReferral = userService.findReferralCode(email,referralCodeRequestDto);
+
+        return ApiResponse.onSuccess(checkReferral);
+    }
+
     //약관동의
     @PostMapping("/auth/term-agreement")
     @Operation(summary = "약관 동의", description = "Term1~Term3(필수),Term4(선택)")

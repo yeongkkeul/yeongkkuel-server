@@ -35,8 +35,6 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus._USER_NOT_FOUND));
 
-        User findRecommendUser = userRepository.findByReferralCode(userInfoDto.getReferralCode())
-                        .orElseThrow(()-> new GeneralException(ErrorStatus._REFERRALCODE_NOT_FOUND));
 
         user.setNickname(userInfoDto.getNickName());
         user.setGender(userInfoDto.getGender());
@@ -47,6 +45,32 @@ public class UserService {
 
         userRepository.save(user);
     }
+
+    public boolean findReferralCode(String email, UserRequestDto.ReferralCodeRequestDto referralCodeRequestDto){
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new GeneralException(ErrorStatus._USER_NOT_FOUND));
+
+        if(referralCodeRequestDto.getReferralCode() == null || referralCodeRequestDto.getReferralCode().isBlank()){
+            return false;
+        }
+        else if(referralCodeRequestDto.getReferralCode()!=null) {
+            User findRecommendUser = userRepository.findByReferralCode(referralCodeRequestDto.getReferralCode())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus._REFERRALCODE_NOT_FOUND));
+
+            findRecommendUser.setRewardBalance(findRecommendUser.getRewardBalance() + 30);
+            user.setRewardBalance(user.getRewardBalance()+30);
+
+            userRepository.save(user);
+            userRepository.save(findRecommendUser);
+
+            return true;
+        }
+
+        return false;
+    }
+
+
 
     public void saveUserTerms(String email, UserRequestDto.TermDTO termDto){
         User user = userRepository.findByEmail(email)
