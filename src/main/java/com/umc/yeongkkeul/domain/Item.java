@@ -27,5 +27,12 @@ public class Item extends BaseEntity {
     // null 값이면 프론트에서 기본 이미지로 등록
     @Column(name = "image_url")
     private String imageUrl;
+
+    public String getName(){
+        return name;
+    }
+    public ItemType getType(){
+        return type;
+    }
 }
 
