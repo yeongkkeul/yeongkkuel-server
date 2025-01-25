@@ -47,8 +47,7 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
             throw new ExpenseHandler(ErrorStatus.EXPENSE_AMOUNT_ERROR);
         }
 
-        // Expense expense = ExpenseConverter.createExpense(request, category);
-        Expense expense = ExpenseConverter.createExpense(request, user, category);
+        Expense expense = ExpenseConverter.createExpense(request, user, category, request.getIsExpense());
 
         // 유저의 지출 내역 저장
         return expenseRepository.save(expense);
@@ -83,8 +82,16 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
         expense.setDay(request.getDay());
         expense.setCategory(category);
         expense.setContent(request.getContent());
-        expense.setAmount(request.getAmount());
         expense.setImageUrl(request.getExpenseImg());
+
+        Integer amount = request.getAmount();
+
+        // is_no_spending(무지출 여부)가 true이면 지출 0원
+        if (request.getIsExpense() == true) {
+            amount = 0;
+        }
+
+        expense.setAmount(amount);
 
         return expenseRepository.save(expense);
     }
