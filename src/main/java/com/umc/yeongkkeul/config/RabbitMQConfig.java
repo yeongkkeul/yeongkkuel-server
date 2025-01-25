@@ -14,6 +14,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 외부 브로커인 RabbitMQ를 설정하는 구성 클래스.
+ */
 @Configuration
 @EnableRabbit
 public class RabbitMQConfig {
