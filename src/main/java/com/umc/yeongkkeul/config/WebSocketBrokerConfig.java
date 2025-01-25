@@ -62,4 +62,3 @@ public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns("*"); // FIXME: CORS 정책 허용 (필요 시 보안 강화를 위해 특정 Origin 설정 가능)
     }
 }
-
