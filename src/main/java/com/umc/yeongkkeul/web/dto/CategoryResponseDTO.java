@@ -38,4 +38,16 @@ public class CategoryResponseDTO {
         String categoryName;
         List<ExpenseResponseDTO.ExpenseListViewDTO> expenses;
     }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CategoryViewListWithExpenditureDTO{
+        String categoryName;
+        int red;
+        int green;
+        int blue;
+        List<ExpenseResponseDTO.ExpenseListView2DTO> expenses;
+    }
 }

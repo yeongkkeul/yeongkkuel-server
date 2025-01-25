@@ -65,7 +65,7 @@ public class ExpenseController {
         return ApiResponse.onSuccess(null);
     }
 
-    @PostMapping("/api/expenditure/target")
+    @PostMapping("/api/expenditures/target")
     @Operation(summary = "유저의 하루 목표 지출액 설정",description = "하루 목표 지출액을 설정합니다.")
     public ApiResponse<User> getUserDayTargetExpenditure(
             @RequestBody @Valid ExpenseRequestDTO.DayTargetExpenditureRequestDto request
@@ -77,11 +77,21 @@ public class ExpenseController {
         return ApiResponse.onSuccess(response);
     }
 
-    @GetMapping("/api/expenditure/day/target")
+    @GetMapping("/api/expenditures/day")
     @Operation(summary = "일간 - 하루 목표 지출액 조회", description = "유저의 하루 목표 지출액을 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.DayTargetExpenditureViewDTO> DayTargetExpenditureView(){
         String userEmail = getCurrentUserId();
         return ApiResponse.onSuccess(expenseQueryServiceImpl.DayTargetExpenditureViewDTO(userEmail));
     }
 
+    @GetMapping("/api/expenditures/{year}/{month}/{day}")
+    @Operation(summary = "카테고리별 지출 기록 조회", description = "카테고리별 지출 기록을 조회합니다.")
+    public ApiResponse<ExpenseResponseDTO.CategoryListExpenditureViewDTO> CategoryExpenseListView(
+            @PathVariable("year") Integer year,
+            @PathVariable("month") Integer month,
+            @PathVariable("day") Integer day
+    ){
+        String userEmail = getCurrentUserId();
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.CategoryExpenseListView(userEmail, year, month, day));
+    }
 }
