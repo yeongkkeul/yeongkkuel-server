@@ -21,4 +21,12 @@ public class ExpenseResponseDTO {
             this.amount = amount;
         }
     }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+     @AllArgsConstructor
+    public static class DayTargetExpenditureViewDTO { // 하루 목표 지출액 조회
+        private Integer dayTargetExpenditure;
+    }
 }

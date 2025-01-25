@@ -4,7 +4,9 @@ import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.service.ExpenseCommandService;
+import com.umc.yeongkkeul.service.ExpenseQueryServiceImpl;
 import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
+import com.umc.yeongkkeul.web.dto.ExpenseResponseDTO;
 import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
 import com.umc.yeongkkeul.web.dto.UserRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +23,7 @@ import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
 //@RequestMapping("/api/expense")
 public class ExpenseController {
     private final ExpenseCommandService expenseCommandService;
+    private final ExpenseQueryServiceImpl expenseQueryServiceImpl;
 
     @PostMapping("/api/expense")
     @Operation(summary = "지출 내역 생성",description = "지출 내역을 입력합니다.")
@@ -72,6 +75,13 @@ public class ExpenseController {
         User response = expenseCommandService.getDayTargetExpenditureRequest(userEmail, request);
 
         return ApiResponse.onSuccess(response);
+    }
+
+    @GetMapping("/api/expenditure/day/target")
+    @Operation(summary = "일간 - 하루 목표 지출액 조회", description = "유저의 하루 목표 지출액을 조회합니다.")
+    public ApiResponse<ExpenseResponseDTO.DayTargetExpenditureViewDTO> DayTargetExpenditureView(){
+        String userEmail = getCurrentUserId();
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.DayTargetExpenditureViewDTO(userEmail));
     }
 
 }
