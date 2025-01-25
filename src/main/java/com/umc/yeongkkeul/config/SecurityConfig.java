@@ -48,7 +48,7 @@ public class SecurityConfig
                                 "/swagger-resources/**",
                                 "/swagger-ui.html",
                                 "/webjars/**",        // Webjars used by Swagger UI
-                                "/api/auth/**",         // 카카오 로그인 엔드포인트
+                                "/api/auth/**",         // 카카오,구글 로그인 엔드포인트
                                 "/api/logout" // 로그아웃 엔드포인트
                         ).permitAll() // Swagger 경로 허용
                         .anyRequest().authenticated()
