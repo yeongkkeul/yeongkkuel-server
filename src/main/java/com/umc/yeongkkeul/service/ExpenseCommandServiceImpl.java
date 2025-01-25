@@ -12,6 +12,8 @@ import com.umc.yeongkkeul.repository.CategoryRepository;
 import com.umc.yeongkkeul.repository.ExpenseRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
 import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
+import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
+import com.umc.yeongkkeul.web.dto.UserRequestDto;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -119,4 +121,22 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
         user.removeExpense(expense);
         expenseRepository.deleteById(expense.getId());
     }
+
+    // 유저의 하루 목표 지출액 설정
+    public User getDayTargetExpenditureRequest(String userEmail, ExpenseRequestDTO.DayTargetExpenditureRequestDto request){
+        // 유저 찾기
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 하루 목표 지출액이 음수일 경우 에러
+        if (request.getDayTargetExpenditure() < 0){
+            throw new ExpenseHandler(ErrorStatus.EXPENSE_DAY_TARGET_EXPENDITURE_ERROR);
+        }
+
+        // 유저의 하루 목표 지출액 설정
+        user.setDayTargetExpenditure(request.getDayTargetExpenditure());
+
+        return userRepository.save(user);
+    }
+
 }

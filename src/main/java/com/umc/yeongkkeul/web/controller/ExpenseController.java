@@ -2,8 +2,11 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.domain.Expense;
+import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.service.ExpenseCommandService;
 import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
+import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
+import com.umc.yeongkkeul.web.dto.UserRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -57,6 +60,18 @@ public class ExpenseController {
         expenseCommandService.deleteExpense(userEmail, expenseId);
 
         return ApiResponse.onSuccess(null);
+    }
+
+    @PostMapping("/api/expenditure/target")
+    @Operation(summary = "유저의 하루 목표 지출액 설정",description = "하루 목표 지출액을 설정합니다.")
+    public ApiResponse<User> getUserDayTargetExpenditure(
+            @RequestBody @Valid ExpenseRequestDTO.DayTargetExpenditureRequestDto request
+    ){
+        String userEmail = getCurrentUserId();
+
+        User response = expenseCommandService.getDayTargetExpenditureRequest(userEmail, request);
+
+        return ApiResponse.onSuccess(response);
     }
 
 }

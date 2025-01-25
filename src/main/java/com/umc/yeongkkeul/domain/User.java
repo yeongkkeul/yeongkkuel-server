@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.domain;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.umc.yeongkkeul.domain.common.BaseEntity;
 import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
@@ -74,6 +75,7 @@ public class User extends BaseEntity {
     @Column(name = "profile_url")
     private String imageUrl;
 
+    // 하루 목표 지출액
     @Column(name = "day_target_expenditure")
     private Integer dayTargetExpenditure; // 널 허용이기에 Wrapper 객체 사용
 
@@ -96,6 +98,7 @@ public class User extends BaseEntity {
     private List<Expense> expenseList = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<Category> categoryList = new ArrayList<>();
 
     // 연관관계 편의 메서드 추가
@@ -121,5 +124,10 @@ public class User extends BaseEntity {
     public void removeExpense(Expense expense) {
         expenseList.remove(expense);
         expense.setUser(null);
+    }
+
+    // 유저의 하루 목표 지출액 설정
+    public void setDayTargetExpenditure(Integer dayTargetExpenditure) {
+        this.dayTargetExpenditure = dayTargetExpenditure;
     }
 }
