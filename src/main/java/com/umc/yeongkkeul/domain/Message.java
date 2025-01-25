@@ -1,3 +1,4 @@
+/*
 package com.umc.yeongkkeul.domain;
 
 import com.umc.yeongkkeul.domain.common.BaseEntity;
@@ -36,3 +37,4 @@ public class Message extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 }
+*/
