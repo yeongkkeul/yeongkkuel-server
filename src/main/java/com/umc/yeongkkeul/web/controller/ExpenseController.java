@@ -15,11 +15,11 @@ import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "지출 API", description = "지출 관련 API 입니다.")
-@RequestMapping("/api/expense")
+//@RequestMapping("/api/expense")
 public class ExpenseController {
     private final ExpenseCommandService expenseCommandService;
 
-    @PostMapping("/")
+    @PostMapping("/api/expense")
     @Operation(summary = "지출 내역 생성",description = "지출 내역을 입력합니다.")
     public ApiResponse<Expense> createExpense(
             @RequestBody @Valid ExpenseRequestDTO.ExpenseDTO request
@@ -32,7 +32,7 @@ public class ExpenseController {
         return ApiResponse.onSuccess(response);
     }
 
-    @PatchMapping("/{expenseId}")
+    @PatchMapping("/api/expense/{expenseId}")
     @Operation(summary = "지출 내역 수정",description = "지출 수정 내역을 입력합니다.")
     public ApiResponse<Expense> updateExpense(
             @PathVariable("expenseId") Long expenseId,
@@ -46,7 +46,7 @@ public class ExpenseController {
         return ApiResponse.onSuccess(response);
     }
 
-    @DeleteMapping("/{expenseId}")
+    @DeleteMapping("/api/expense/{expenseId}")
     @Operation(summary = "지출 내역 삭제",description = "지출 내역을 삭제합니다.")
     public ApiResponse<?> deleteExpense(
             @PathVariable("expenseId") Long expenseId

@@ -15,13 +15,13 @@ import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "홍 API", description = "홈 화면 API 입니다.")
-@RequestMapping("/api/home")
+//@RequestMapping("/api/home")
 public class HomeController {
 
     private final HomeQueryServiceImpl homeQueryServiceImpl;
 
     @Operation(summary = "홈 화면 조회")
-    @GetMapping("/")
+     @GetMapping("/api/home")
     public ApiResponse<HomeResponseDTO.HomeViewDTO> home() {
         String userEmail = getCurrentUserId();
         return ApiResponse.onSuccess(homeQueryServiceImpl.viewHome(userEmail));
