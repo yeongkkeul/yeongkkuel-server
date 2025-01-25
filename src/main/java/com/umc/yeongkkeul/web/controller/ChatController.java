@@ -36,9 +36,9 @@ public class ChatController {
     @MessageMapping("chat.message.{roomId}")
     public void sendMessage(@DestinationVariable String roomId, @RequestBody MessageDto messageDto) {
 
-        chatService.sendMessage(messageDto);
+        chatService.sendMessage(messageDto); // 메시지 전송
         log.info("Send a message to the group chat room with roomID");
-        chatService.saveMessages(messageDto);
+        chatService.saveMessages(messageDto); // 메시지 저장 TODO: 나중에 Consumer를 통해서 저장하자
     }
 
     /**
