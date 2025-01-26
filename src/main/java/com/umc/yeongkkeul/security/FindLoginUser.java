@@ -1,5 +1,7 @@
 package com.umc.yeongkkeul.security;
 
+import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -28,4 +30,10 @@ public class FindLoginUser {
         }
         return null;
     }
+
+    public static Long toId(String email){
+        return userRepository.findByEmail(email).orElseThrow(()->new UserHandler(ErrorStatus.USER_NOT_FOUND)).getId();
+    }
+
+
 }
