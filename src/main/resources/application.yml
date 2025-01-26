@@ -44,10 +44,10 @@ kakao:
   client-id: ${KAKAO_CLEINT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
 
-  rabbitmq:
-    queue:
-      name: "chat.queue" # 사용할 Queue 이름 지정
-    exchange:
-      name: "chat.exchange" # 사용할 exchange 이름 (구독할 때 사용)
-    routing:
-      key: "chat.room.*" # routing-key. chat.room.{room_id}를 구독
+rabbitmq:
+  queue:
+    name: "chat.queue" # 사용할 Queue 이름 지정
+  exchange:
+    name: "chat.exchange" # 사용할 exchange 이름 (구독할 때 사용)
+  routing:
+    key: "chat.room.*" # routing-key. chat.room.{room_id}를 구독
