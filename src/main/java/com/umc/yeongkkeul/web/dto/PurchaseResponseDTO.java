@@ -15,6 +15,7 @@ public class PurchaseResponseDTO {
     public static class PurchaseViewDTO{
         String itemName;
         String itemType;
+        String imgUrl;
     }
 
     @Builder

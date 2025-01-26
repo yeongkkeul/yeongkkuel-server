@@ -34,5 +34,8 @@ public class Item extends BaseEntity {
     public ItemType getType(){
         return type;
     }
+    public String getImgUrl(){
+        return imageUrl;
+    }
 }
 

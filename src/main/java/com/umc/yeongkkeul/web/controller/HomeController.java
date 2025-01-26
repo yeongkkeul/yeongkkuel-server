@@ -14,7 +14,7 @@ import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "홍 API", description = "홈 화면 API 입니다.")
+@Tag(name = "홈 API", description = "홈 화면 API 입니다.")
 //@RequestMapping("/api/home")
 public class HomeController {
 
