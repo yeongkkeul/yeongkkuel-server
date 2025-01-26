@@ -94,4 +94,11 @@ public class ExpenseController {
         String userEmail = getCurrentUserId();
         return ApiResponse.onSuccess(expenseQueryServiceImpl.CategoryExpenseListView(userEmail, year, month, day));
     }
+
+    @GetMapping("/api/expenditures/week/expenses")
+    @Operation(summary = "주간 - 지출액 조회", description = "해당 주간의 지출액을 조회합니다.")
+    public ApiResponse<ExpenseResponseDTO.WeeklyExpenditureViewDTO> WeeklyExpenseListView(){
+        String userEmail = getCurrentUserId();
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.getWeeklyExpenditure(userEmail));
+    }
 }

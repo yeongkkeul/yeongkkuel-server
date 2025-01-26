@@ -12,7 +12,7 @@ public class ExpenseResponseDTO {
     @Getter
     @NoArgsConstructor
     // @AllArgsConstructor
-    public static class ExpenseListViewDTO {
+    public static class ExpenseListViewDTO { // expenseId, content, amount -> 지출 생성 때 사용
         private Long expenseId;
         String content;
         private Integer amount;
@@ -27,13 +27,26 @@ public class ExpenseResponseDTO {
     @Builder
     @Getter
     @NoArgsConstructor
-    public static class ExpenseListView2DTO {
+    public static class ExpenseListView2DTO { // expenseName, expenseAmount -> 일별 사용자의 카테고리별 지출 기록(목록)조회 때 사용
         private String expenseName;
         private Integer expenseAmount;
 
         public ExpenseListView2DTO(String expenseName, Integer expenseAmount) {
             this.expenseName = expenseName;
             this.expenseAmount = expenseAmount;
+        }
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    public static class ExpensePerDayDTO  { // 주간 - 지출액 조회 때 사용
+        private String expenseDate; // "2025-01-11, Saturday"
+        private Integer expediture; // 그 날의 총 지출액
+
+        public ExpensePerDayDTO (String expenseDate, Integer expediture) {
+            this.expenseDate = expenseDate;
+            this.expediture = expediture;
         }
     }
 
@@ -51,5 +64,15 @@ public class ExpenseResponseDTO {
     @AllArgsConstructor
     public static class CategoryListExpenditureViewDTO {
         List<CategoryResponseDTO.CategoryViewListWithExpenditureDTO> categories;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WeeklyExpenditureViewDTO {
+        Integer weekExpenditure;
+        Integer dayTargetExpenditure;
+        List<ExpensePerDayDTO> expenses;
     }
 }
