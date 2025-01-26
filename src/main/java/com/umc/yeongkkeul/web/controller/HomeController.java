@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
+import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,7 +24,7 @@ public class HomeController {
     @Operation(summary = "홈 화면 조회")
      @GetMapping("/api/home")
     public ApiResponse<HomeResponseDTO.HomeViewDTO> home() {
-        String userEmail = getCurrentUserId();
-        return ApiResponse.onSuccess(homeQueryServiceImpl.viewHome(userEmail));
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(homeQueryServiceImpl.viewHome(userId));
     }
 }

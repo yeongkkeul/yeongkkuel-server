@@ -8,17 +8,14 @@ import com.umc.yeongkkeul.web.dto.UserRequestDto;
 
 public abstract class ExpenseCommandService {
     // 유저의 지출 내역 생성
-    public abstract Expense createExpense(String userEmail, String categoryName, ExpenseRequestDTO.ExpenseDTO request);
+    public abstract Expense createExpense(Long userId, String categoryName, ExpenseRequestDTO.ExpenseDTO request);
 
     // 유저의 지출 내역 수정
-    public abstract Expense updateExpense(String userEmail, Long expenseId, String categoryName, ExpenseRequestDTO.ExpenseDTO request);
+    public abstract Expense updateExpense(Long userId, Long expenseId, String categoryName, ExpenseRequestDTO.ExpenseDTO request);
 
     // 유저의 지출 내역 삭제
-    public abstract void deleteExpense(String userEmail, Long expenseId);
+    public abstract void deleteExpense(Long userId, Long expenseId);
 
     // 유저의 하루 목표 지출액 설정
-    public abstract User getDayTargetExpenditureRequest(String userEmail, ExpenseRequestDTO.DayTargetExpenditureRequestDto request);
-
-
-    // 유저의 하루 목표 지출액 추천 - 월 평균 지출 조회
+    public abstract User getDayTargetExpenditureRequest(Long userId, ExpenseRequestDTO.DayTargetExpenditureRequestDto request);
 }
