@@ -43,4 +43,7 @@ public class Purchase extends BaseEntity {
     public Item getItem() {
         return item;
     }
+    public Boolean getIsUsed(){
+        return isUsed;
+    }
 }

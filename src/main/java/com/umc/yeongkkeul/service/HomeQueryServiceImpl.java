@@ -46,8 +46,15 @@ public class HomeQueryServiceImpl implements HomeQueryService {
 
         // 유저의 아이템 구매 이력 가져오기
         List<Purchase> purchases = purchaseRepository.findByUser(user);
-        List<PurchaseResponseDTO.PurchaseViewDTO> purchaseList
-                = PurchaseConverter.toPurchaseViewListDTO(purchases).getPurchaseList();
+
+        // isUsed = true인 항목만 필터링
+        List<Purchase> filteredPurchases = purchases.stream()
+                .filter(purchase -> purchase.getIsUsed() == true)
+                .collect(Collectors.toList());
+
+        // 구매 이력을 DTO로 변환
+        List<PurchaseResponseDTO.PurchaseViewDTO> usingItemList
+                = PurchaseConverter.toPurchaseViewListDTO(filteredPurchases).getPurchaseList();
 
         // 카테고리 및 지출 정보 가져오기
         List<Category> categories = categoryRepository.findByUser(user);
@@ -56,7 +63,7 @@ public class HomeQueryServiceImpl implements HomeQueryService {
 
         return HomeResponseDTO.HomeViewDTO.builder()
                 .myReward(user.getRewardBalance())
-                .mySkin(purchaseList)
+                .mySkin(usingItemList)
                 .today(today)
                 .categories(categoryList)
                 .build();
