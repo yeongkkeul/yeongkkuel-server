@@ -17,16 +17,19 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 @Configuration
 public class RedisConfig {
 
-    private final String redisHost; // Redis 서버의 호스트 주소
-    private final int redisPort; // Redis 서버의 포트 번호
+    private final String REDIS_HOST; // Redis 서버의 호스트 주소
+    private final int REDIS_PORT; // Redis 서버의 포트 번호
+    private final String REDIS_PASSWORD; // Redis 서버의 비밀번호
 
     public RedisConfig(
-            @Value("${spring.data.redis.host}") String redisHost,
-            @Value("${spring.data.redis.port}") int redisPort)
+            @Value("${spring.data.redis.host}") String REDIS_HOST,
+            @Value("${spring.data.redis.port}") int REDIS_PORT,
+            @Value("${spring.data.redis.password}") String REDIS_PASSWORD)
     {
 
-        this.redisHost = redisHost;
-        this.redisPort = redisPort;
+        this.REDIS_HOST = REDIS_HOST;
+        this.REDIS_PORT = REDIS_PORT;
+        this.REDIS_PASSWORD = REDIS_PASSWORD;
     }
 
     /**
@@ -39,8 +42,9 @@ public class RedisConfig {
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
 
-
-        return new LettuceConnectionFactory(redisHost, redisPort);
+        LettuceConnectionFactory connectionFactory = new LettuceConnectionFactory(REDIS_HOST, REDIS_PORT);
+        connectionFactory.setPassword(REDIS_PASSWORD);  // 비밀번호 설정
+        return connectionFactory;
     }
 
     /**
