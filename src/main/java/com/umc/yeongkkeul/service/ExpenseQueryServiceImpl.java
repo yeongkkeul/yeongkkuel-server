@@ -56,7 +56,7 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 카테고리 및 지출 정보 가져오기 (이때 year, month, day 넘기기)
-        List<Category> categories = categoryRepository.findByUser(user);
+        List<Category> categories = categoryRepository.findAllByUserId(user.getId());
         List<CategoryResponseDTO.CategoryViewListWithExpenditureDTO> categoryList
                 = CategoryConverter.toCategoriesViewListWithExpenditureDTO(categories, user, year, month, day);
 

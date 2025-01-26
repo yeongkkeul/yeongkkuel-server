@@ -57,7 +57,7 @@ public class HomeQueryServiceImpl implements HomeQueryService {
                 = PurchaseConverter.toPurchaseViewListDTO(filteredPurchases).getPurchaseList();
 
         // 카테고리 및 지출 정보 가져오기
-        List<Category> categories = categoryRepository.findByUser(user);
+        List<Category> categories = categoryRepository.findAllByUserId(user.getId());
         List<CategoryResponseDTO.CategoryViewListWithHomeDTO> categoryList
                 = CategoryConverter.toCategoriesViewListWithHomeDTO(categories, user, today);
 
