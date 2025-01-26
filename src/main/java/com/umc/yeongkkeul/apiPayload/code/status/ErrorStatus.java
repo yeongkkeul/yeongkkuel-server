@@ -39,6 +39,8 @@ public enum ErrorStatus implements BaseErrorCode {
     EXPENSE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4001", "지출 내역을 찾을 수 없습니다."),
     EXPENSE_AMOUNT_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4002", "지출 금액이 유효하지 않습니다.."),
     EXPENSE_CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4002", "유효하지 않은 지출 카테고리입니다."),
+    EXPENSE_DAY_TARGET_EXPENDITURE_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4004", "하루 목표 지출액이 유효하지 않습니다."),
+    EXPENSE_DAY_TARGET_EXPENDITURE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4005", "하루 목표 지출액이 존재하지 않습니다."),
 
     // Purchase (아이템 이력)
     Purchase_NOT_FOUND(HttpStatus.BAD_REQUEST, "ITEMH4001", "아이템 이력 기록이 존재하지 않습니다.");

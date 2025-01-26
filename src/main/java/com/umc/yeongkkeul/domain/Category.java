@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.domain;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.umc.yeongkkeul.domain.common.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
@@ -42,6 +43,7 @@ public class Category extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonManagedReference
     private User user;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)

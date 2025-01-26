@@ -30,6 +30,7 @@ public class Expense extends BaseEntity {
     @Column(name = "amount", nullable = false)
     private int amount;
 
+    // true 이면 무지출
     @Column(name = "is_no_spending", nullable = false)
     private boolean isNoSpending;
 
