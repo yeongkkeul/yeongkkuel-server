@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
+import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
+import static com.umc.yeongkkeul.security.FindLoginUser.toId;
+
 @RestController
 @RequestMapping("/api/category")
 @Tag(name = "카테고리 API", description = "카테고리 관련 API 입니다.")
@@ -27,10 +30,10 @@ public class CategoryController {
     @PostMapping
     @Operation(summary = "카테고리 생성", description = "컬러값과 이름을 받아서, 카테고리 생성합니다.")
     public ApiResponse<CategoryResponseDTO.CategoryViewDTO> createCategory(
-            @RequestBody @Valid CategoryRequestDTO.CategoryDTO request,
-            Principal principal
+            @RequestBody @Valid CategoryRequestDTO.CategoryDTO request
     ) {
-        Long userId = Long.parseLong(principal.getName());
+        Long userId = toId(getCurrentUserId());
+
 
         CategoryResponseDTO.CategoryViewDTO response = categoryCommandService.addCategory(request, userId);
         return ApiResponse.onSuccess(response);
@@ -40,10 +43,9 @@ public class CategoryController {
     @Operation(summary = "카테고리 수정", description = "컬러값과 이름을 받아서, 카테고리 수정합니다.")
     public ApiResponse<CategoryResponseDTO.CategoryViewDTO> updateCategory(
             @PathVariable Long categoryId,
-            @RequestBody @Valid CategoryRequestDTO.CategoryDTO request,
-            Principal principal
+            @RequestBody @Valid CategoryRequestDTO.CategoryDTO request
     ) {
-        Long userId = Long.parseLong(principal.getName());
+        Long userId = toId(getCurrentUserId());
 
         CategoryResponseDTO.CategoryViewDTO response = categoryCommandService.updateCategory(categoryId, request, userId);
         return ApiResponse.onSuccess(response);
@@ -53,10 +55,9 @@ public class CategoryController {
     @GetMapping("/{categoryId}")
     @Operation(summary = "카테고리 조회", description = "카테고리 id기반 세부 조회합니다.")
     public ApiResponse<CategoryResponseDTO.CategoryViewDTO> viewCategory(
-            @PathVariable Long categoryId,
-            Principal principal
+            @PathVariable Long categoryId
     ){
-        Long userId = Long.parseLong(principal.getName());
+        Long userId = toId(getCurrentUserId());
 
         CategoryResponseDTO.CategoryViewDTO response = categoryQueryService.viewCategory(categoryId, userId);
         return ApiResponse.onSuccess(response);
@@ -64,8 +65,8 @@ public class CategoryController {
 
     @GetMapping("/categories")
     @Operation(summary = "카테고리 목록조회", description = "카테고리 목록 조회합니다.")
-    public ApiResponse<CategoryResponseDTO.CategoryViewListDTO> viewCategories(Principal principal){
-        Long userId = Long.parseLong(principal.getName());
+    public ApiResponse<CategoryResponseDTO.CategoryViewListDTO> viewCategories(){
+        Long userId = toId(getCurrentUserId());
 
         CategoryResponseDTO.CategoryViewListDTO response = categoryQueryService.viewCategories(userId);
         return ApiResponse.onSuccess(response);
@@ -74,8 +75,8 @@ public class CategoryController {
 
     @DeleteMapping("/{categoryId}")
     @Operation(summary = "카테고리 삭제", description = "카테고리 id로 삭제")
-    public ApiResponse<?> deleteCategory(@PathVariable Long categoryId, Principal principal) {
-        Long userId = Long.parseLong(principal.getName());
+    public ApiResponse<?> deleteCategory(@PathVariable Long categoryId) {
+        Long userId = toId(getCurrentUserId());
 
         categoryCommandService.deleteCategory(categoryId, userId);
 
