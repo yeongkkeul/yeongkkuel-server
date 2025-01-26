@@ -11,9 +11,9 @@ import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.enums.UserRole;
 import com.umc.yeongkkeul.repository.UserTermsRepository;
-import com.umc.yeongkkeul.web.dto.KakaoInfoResponseDto;
 import com.umc.yeongkkeul.web.dto.KakaoTokenResponseDto;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.web.dto.SocialInfoResponseDto;
 import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -155,10 +155,11 @@ public class KakaoLoginService {
         return userInfo;
     }
 
-    public KakaoInfoResponseDto.KakaoInfoDTO loginUserInfo(String jwtToken, String refreshToken, String email,String name){
+    //카카오 로그인 성공 기본 값 저장
+    public SocialInfoResponseDto.KakaoInfoDTO loginUserInfo(String jwtToken, String refreshToken, String email, String name){
 
         boolean isExistUser = userRepository.existsByEmail(email);
-        boolean isExistTerms = userTermsRepository.existsByUser_Email(email);
+        boolean isExistTerms = userTermsRepository.existsByUser_EmailAndUser_OauthType(email,"KAKAO");
 
         String redirectUrl = isExistTerms ? "/api/home" : "/api/auth/user-info";
 
@@ -181,7 +182,7 @@ public class KakaoLoginService {
             userRepository.save(user);
         }
 
-        return KakaoInfoResponseDto.KakaoInfoDTO.builder()
+        return SocialInfoResponseDto.KakaoInfoDTO.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
                 .email(email)
