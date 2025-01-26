@@ -3,10 +3,13 @@ package com.umc.yeongkkeul.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompReactorNettyCodec;
+import org.springframework.messaging.tcp.reactor.ReactorNettyTcpClient;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import reactor.netty.tcp.TcpClient;
 
 /**
  * WebSocketBrokerConfig 클래스
@@ -17,13 +20,18 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker // WebSocket 메시지 브로커 활성화
 public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final String RABBITMQ_HOST; // RabbitMQ 호스트 주소를 저장하는 필드
+    private final String RABBITMQ_HOST;
+    private final String RABBITMQ_USERNAME;
+    private final String RABBITMQ_PASSWORD;
 
-    public WebSocketBrokerConfig(
-            @Value("${spring.rabbitmq.host}") String rabbitmqHost
+    public WebSocketBrokerConfig (
+            @Value("${spring.rabbitmq.host}") String RABBITMQ_HOST,
+            @Value("${spring.rabbitmq.username}") String RABBITMQ_USERNAME,
+            @Value("${spring.rabbitmq.password}") String RABBITMQ_PASSWORD
     ) {
-
-        this.RABBITMQ_HOST = rabbitmqHost;
+        this.RABBITMQ_HOST = RABBITMQ_HOST;
+        this.RABBITMQ_USERNAME = RABBITMQ_USERNAME;
+        this.RABBITMQ_PASSWORD = RABBITMQ_PASSWORD;
     }
 
     /**
@@ -35,16 +43,31 @@ public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
 
+        TcpClient tcpClient = TcpClient
+                .create()
+                .host(RABBITMQ_HOST)
+                .port(61613);
+
+        ReactorNettyTcpClient<byte[]> client = new ReactorNettyTcpClient<>(tcpClient, new StompReactorNettyCodec());
+
+        // STOMP 브로커 릴레이 활성화 -> 내장 STOMP가 아닌 외부 브로커를 사용
+        // 지정된 경로(/queue, /topic, /exchange, /amq/queue)에 대해 RabbitMQ 브로커와 통신
+        registry.enableStompBrokerRelay("/queue", "/topic", "/exchange", "/amq/queue")
+                .setAutoStartup(true)
+                .setTcpClient(client) // RabbitMQ와 연결할 클라이언트 설정
+                .setRelayHost(RABBITMQ_HOST) // RabbitMQ 서버 주소
+                .setRelayPort(61613) // RabbitMQ 포트(5672), STOMP(61613)
+                .setSystemLogin(RABBITMQ_USERNAME) // RabbitMQ 시스템 계정
+                .setSystemPasscode(RABBITMQ_PASSWORD) // RabbitMQ 시스템 비밀번호
+                .setClientLogin(RABBITMQ_USERNAME) // RabbitMQ 클라이언트 계정
+                .setClientPasscode(RABBITMQ_PASSWORD); // RabbitMQ 클라이언트 비밀번호
+
         // 메시지 경로의 구분자를 `/` 대신 `.`으로 변경 (예: /topic/chat -> topic.chat)
         registry.setPathMatcher(new AntPathMatcher("."));
 
         // 클라이언트가 SEND 요청을 보낼 때 라우팅될 경로의 접두어 설정
         // 예: /pub/chat -> @MessageMapping("chat")으로 매핑
         registry.setApplicationDestinationPrefixes("/pub");
-
-        // STOMP 브로커 릴레이 활성화 -> 내장 STOMP가 아닌 외부 브로커를 사용
-        // 지정된 경로(/queue, /topic, /exchange, /amq/queue)에 대해 RabbitMQ 브로커와 통신
-        registry.enableStompBrokerRelay("/queue", "/topic", "/exchange", "/amq/queue");
     }
 
     /**
