@@ -22,6 +22,19 @@ spring:
       max-file-size: 200MB
       max-request-size: 300MB
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+      password: ${REDIS_PASSWORD}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: 5672
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: / # 브로커에서 여러 개의 메시지 도메인을 사용할 수 있게 해주는 논리적 그룹
+
 external:
   jwt:
     secret: ${JWT_SECRET_KEY}
@@ -30,3 +43,11 @@ kakao:
   redirect-url: https://localhost:8080/login/oauth2/callback/kakao
   client-id: ${KAKAO_CLEINT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
+
+rabbitmq:
+  queue:
+    name: "chat.queue" # 사용할 Queue 이름 지정
+  exchange:
+    name: "chat.exchange" # 사용할 exchange 이름 (구독할 때 사용)
+  routing:
+    key: "chat.room.*" # routing-key. chat.room.{room_id}를 구독
