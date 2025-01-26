@@ -103,8 +103,11 @@ public class ChatService {
 
          */
 
+        /*
         ChatRoom chatRoom = chatRoomRepository.findById(messageDto.chatRoomId())
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+         */
 
         String redisKey = "chat:room:" + messageDto.chatRoomId() + ":message";
         redisTemplate.opsForList().leftPush(redisKey, messageDto);
