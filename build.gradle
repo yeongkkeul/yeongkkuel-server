@@ -62,10 +62,16 @@ dependencies {
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.2'
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.2'
 
+	/* Redis */
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+	/* STOMP over websocket */
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.webjars:stomp-websocket:2.3.3'
+	implementation "org.springframework.boot:spring-boot-starter-reactor-netty" // RabbitMQ에서 브로커 연결 및 통신 설정을 위해 기본으로 사용
 
-
-
+	/* RabbitMQ */
+	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 }
 
 tasks.named('test') {
