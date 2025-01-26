@@ -22,7 +22,7 @@ spring:
       max-file-size: 200MB
       max-request-size: 300MB
 
-    data:
+  data:
     redis:
       host: ${REDIS_HOST}
       port: 6379
