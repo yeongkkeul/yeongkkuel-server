@@ -5,18 +5,31 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-public class KakaoInfoResponseDto {
+public class SocialInfoResponseDto {
 
     @Builder
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class KakaoInfoDTO{
+
         String accessToken;
         String refreshToken;
         String email;
         String redirectUrl;
 
+    }
+
+    @Builder
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GoogleInfoDTO{
+
+        String accessToken;
+        String refreshToken;
+        String email;
+        String redirectUrl;
     }
 
 

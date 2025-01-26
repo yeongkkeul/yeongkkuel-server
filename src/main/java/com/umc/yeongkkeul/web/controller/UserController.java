@@ -4,12 +4,10 @@ import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.security.FindLoginUser;
 import com.umc.yeongkkeul.security.TokenProvider;
 import com.umc.yeongkkeul.service.AuthCommandService;
+import com.umc.yeongkkeul.service.GoogleLoginService;
 import com.umc.yeongkkeul.service.KakaoLoginService;
 import com.umc.yeongkkeul.service.UserService;
-import com.umc.yeongkkeul.web.dto.KakaoInfoResponseDto;
-import com.umc.yeongkkeul.web.dto.TokenDto;
-import com.umc.yeongkkeul.web.dto.TokenRequestDto;
-import com.umc.yeongkkeul.web.dto.UserRequestDto;
+import com.umc.yeongkkeul.web.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +26,8 @@ public class UserController {
     @Autowired
     private KakaoLoginService kakaoLoginService;
     @Autowired
+    private GoogleLoginService googleLoginService;
+    @Autowired
     private TokenProvider tokenProvider;
     @Autowired
     private AuthCommandService authCommandService;
@@ -37,7 +37,7 @@ public class UserController {
     //카카오
     @GetMapping("/auth/kakao-login/")
     @Operation(summary = "카카오 로그인", description = "카카오 로그인 GET")
-    public ApiResponse<KakaoInfoResponseDto.KakaoInfoDTO> kakakoLogin(@RequestParam String code){
+    public ApiResponse<SocialInfoResponseDto.KakaoInfoDTO> kakakoLogin(@RequestParam String code){
         String accessToken = kakaoLoginService.getKakaoAccessToken(code);
 
         HashMap<String, Object> userInfo = kakaoLoginService.getUserInfo(accessToken);
@@ -53,14 +53,21 @@ public class UserController {
         String jwtToken = tokenDto.getAccessToken();
         String refreshToken = tokenDto.getRefreshToken();
 
-        KakaoInfoResponseDto.KakaoInfoDTO kakaoInfoDTO = kakaoLoginService.loginUserInfo(jwtToken,refreshToken,email,name);
+        SocialInfoResponseDto.KakaoInfoDTO kakaoInfoDTO = kakaoLoginService.loginUserInfo(jwtToken,refreshToken,email,name);
 
         return ApiResponse.onSuccess(kakaoInfoDTO);
     }
 
 
     //구글
+    @GetMapping("/auth/google-login/")
+    @Operation(summary = "구글 로그인", description = "구글 로그인 GET")
+    public ApiResponse<SocialInfoResponseDto.GoogleInfoDTO> googleLogin(@RequestParam String idToken){
 
+        SocialInfoResponseDto.GoogleInfoDTO googleInfoDTO = googleLoginService.socialLoginGoogle(idToken);
+
+        return ApiResponse.onSuccess(googleInfoDTO);
+    }
 
 
 
