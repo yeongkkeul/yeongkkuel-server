@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserTermsRepository extends JpaRepository<UserTerms, Long> {
 
     Boolean existsByUser_Email(String email);
+
+    Boolean existsByUser_EmailAndUser_OauthType(String email, String oauthType);
 }
