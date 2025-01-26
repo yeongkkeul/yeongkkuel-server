@@ -16,7 +16,7 @@ public class MyPageInfoResponseDto {
     private AgeGroup ageGroup;
     private String email;
     private String profileImageUrl;
-    private int dayTargetExpenditure;
+    private Integer dayTargetExpenditure;
     private int rewardBalance;
     private double weeklyAchievementRate;
 

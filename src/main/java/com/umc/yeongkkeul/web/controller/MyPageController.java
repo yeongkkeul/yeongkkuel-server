@@ -22,8 +22,6 @@ import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 @Tag(name = "MyPage", description = "마이페이지 관련 API")
 public class MyPageController {
 
-    // TODO: api 전부 다 토큰으로 사용자 인증으로 변경
-
     private final MyPageCommandService myPageCommandService;
     private final MyPageQueryService myPageQueryService;
 
