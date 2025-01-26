@@ -29,10 +29,9 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
 
     // 유저의 지출 내역 생성
     @Override
-    public Expense createExpense(String userEmail, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
+    public Expense createExpense(Long userId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
         // 유저 찾기
-        System.out.println("user는 "+ userEmail);
-        User user = userRepository.findByEmail(userEmail)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기
@@ -57,10 +56,9 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
 
     // 유저의 지출 내역 수정
     @Override
-    public Expense updateExpense(String userEmail, Long expenseId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
+    public Expense updateExpense(Long userId, Long expenseId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
         // 유저 찾기
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기
         Category category = categoryRepository.findByName(categoryName)
@@ -99,10 +97,9 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
     }
 
     @Override
-    public void deleteExpense(String userEmail, Long expenseId){
+    public void deleteExpense(Long userId, Long expenseId){
         // 유저 찾기
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기
         // Category category = categoryRepository.findByName(categoryName)
@@ -123,10 +120,9 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
     }
 
     // 유저의 하루 목표 지출액 설정
-    public User getDayTargetExpenditureRequest(String userEmail, ExpenseRequestDTO.DayTargetExpenditureRequestDto request){
+    public User getDayTargetExpenditureRequest(Long userId, ExpenseRequestDTO.DayTargetExpenditureRequestDto request){
         // 유저 찾기
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 하루 목표 지출액이 음수일 경우 에러
         if (request.getDayTargetExpenditure() < 0){

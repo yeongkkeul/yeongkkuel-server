@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
+import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,11 +31,11 @@ public class ExpenseController {
     public ApiResponse<Expense> createExpense(
             @RequestBody @Valid ExpenseRequestDTO.ExpenseDTO request
     ) {
-        String userEmail = getCurrentUserId();
+        Long userId = toId(getCurrentUserId());
 
         String categoryName = request.getCategory();
 
-        Expense response = expenseCommandService.createExpense(userEmail, categoryName, request);
+        Expense response = expenseCommandService.createExpense(userId, categoryName, request);
         return ApiResponse.onSuccess(response);
     }
 
@@ -44,11 +45,11 @@ public class ExpenseController {
             @PathVariable("expenseId") Long expenseId,
             @RequestBody @Valid ExpenseRequestDTO.ExpenseDTO request
     ){
-        String userEmail = getCurrentUserId();
+        Long userId = toId(getCurrentUserId());
 
         String categoryName = request.getCategory();
 
-        Expense response = expenseCommandService.updateExpense(userEmail, expenseId, categoryName, request);
+        Expense response = expenseCommandService.updateExpense(userId, expenseId, categoryName, request);
         return ApiResponse.onSuccess(response);
     }
 
@@ -57,10 +58,9 @@ public class ExpenseController {
     public ApiResponse<?> deleteExpense(
             @PathVariable("expenseId") Long expenseId
     ){
-        // getCurrentUserId는 현재 사용자 이메일을 반환해줌
-         String userEmail = getCurrentUserId();
+        Long userId = toId(getCurrentUserId());
 
-        expenseCommandService.deleteExpense(userEmail, expenseId);
+        expenseCommandService.deleteExpense(userId, expenseId);
 
         return ApiResponse.onSuccess(null);
     }
@@ -70,9 +70,9 @@ public class ExpenseController {
     public ApiResponse<User> getUserDayTargetExpenditure(
             @RequestBody @Valid ExpenseRequestDTO.DayTargetExpenditureRequestDto request
     ){
-        String userEmail = getCurrentUserId();
+        Long userId = toId(getCurrentUserId());
 
-        User response = expenseCommandService.getDayTargetExpenditureRequest(userEmail, request);
+        User response = expenseCommandService.getDayTargetExpenditureRequest(userId, request);
 
         return ApiResponse.onSuccess(response);
     }
@@ -80,8 +80,8 @@ public class ExpenseController {
     @GetMapping("/api/expenditures/day")
     @Operation(summary = "일간 - 하루 목표 지출액 조회", description = "유저의 하루 목표 지출액을 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.DayTargetExpenditureViewDTO> DayTargetExpenditureView(){
-        String userEmail = getCurrentUserId();
-        return ApiResponse.onSuccess(expenseQueryServiceImpl.DayTargetExpenditureViewDTO(userEmail));
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.DayTargetExpenditureViewDTO(userId));
     }
 
     @GetMapping("/api/expenditures/{year}/{month}/{day}")
@@ -91,14 +91,14 @@ public class ExpenseController {
             @PathVariable("month") Integer month,
             @PathVariable("day") Integer day
     ){
-        String userEmail = getCurrentUserId();
-        return ApiResponse.onSuccess(expenseQueryServiceImpl.CategoryExpenseListView(userEmail, year, month, day));
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.CategoryExpenseListView(userId, year, month, day));
     }
 
     @GetMapping("/api/expenditures/week/expenses")
     @Operation(summary = "주간 - 지출액 조회", description = "해당 주간의 지출액을 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.WeeklyExpenditureViewDTO> WeeklyExpenseListView(){
-        String userEmail = getCurrentUserId();
-        return ApiResponse.onSuccess(expenseQueryServiceImpl.getWeeklyExpenditure(userEmail));
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.getWeeklyExpenditure(userId));
     }
 }

@@ -5,7 +5,7 @@ import com.umc.yeongkkeul.web.dto.CategoryResponseDTO;
 import com.umc.yeongkkeul.web.dto.ExpenseResponseDTO;
 
 public interface ExpenseQueryService {
-    ExpenseResponseDTO.DayTargetExpenditureViewDTO DayTargetExpenditureViewDTO(String userEmail);
+    ExpenseResponseDTO.DayTargetExpenditureViewDTO DayTargetExpenditureViewDTO(Long userId);
 
-    ExpenseResponseDTO.CategoryListExpenditureViewDTO CategoryExpenseListView(String userEmail, Integer year, Integer month, Integer day);
+    ExpenseResponseDTO.CategoryListExpenditureViewDTO CategoryExpenseListView(Long userId, Integer year, Integer month, Integer day);
 }

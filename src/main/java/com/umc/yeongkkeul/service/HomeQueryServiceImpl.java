@@ -36,12 +36,12 @@ public class HomeQueryServiceImpl implements HomeQueryService {
     private final PurchaseRepository purchaseRepository;
 
     @Override
-    public HomeResponseDTO.HomeViewDTO viewHome(String userEmail){
+    public HomeResponseDTO.HomeViewDTO viewHome(Long userId){
         // 오늘의 날짜는요
         LocalDate today = java.time.LocalDate.now();
 
         // 유저 찾기
-        User user = userRepository.findByEmail(userEmail)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 아이템 구매 이력 가져오기
@@ -57,7 +57,7 @@ public class HomeQueryServiceImpl implements HomeQueryService {
                 = PurchaseConverter.toPurchaseViewListDTO(filteredPurchases).getPurchaseList();
 
         // 카테고리 및 지출 정보 가져오기
-        List<Category> categories = categoryRepository.findByUser(user);
+        List<Category> categories = categoryRepository.findAllByUserId(user.getId());
         List<CategoryResponseDTO.CategoryViewListWithHomeDTO> categoryList
                 = CategoryConverter.toCategoriesViewListWithHomeDTO(categories, user, today);
 

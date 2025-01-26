@@ -33,9 +33,9 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
 
     // 일간 - 유저의 하루 목쵸 지출액 조회
     @Override
-    public ExpenseResponseDTO.DayTargetExpenditureViewDTO DayTargetExpenditureViewDTO(String userEmail) {
+    public ExpenseResponseDTO.DayTargetExpenditureViewDTO DayTargetExpenditureViewDTO(Long userId) {
         // 유저 찾기
-        User user = userRepository.findByEmail(userEmail)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 만약 유저가 하루 목표 지출액을 설정해둔 적이 없다면 에러
@@ -50,13 +50,13 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
 
     // 일간 - 카테고리별 지출 기록(목록) 조회
     @Override
-    public ExpenseResponseDTO.CategoryListExpenditureViewDTO CategoryExpenseListView(String userEmail, Integer year, Integer month, Integer day){
+    public ExpenseResponseDTO.CategoryListExpenditureViewDTO CategoryExpenseListView(Long userId, Integer year, Integer month, Integer day){
         // 유저 찾기
-        User user = userRepository.findByEmail(userEmail)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 카테고리 및 지출 정보 가져오기 (이때 year, month, day 넘기기)
-        List<Category> categories = categoryRepository.findByUser(user);
+        List<Category> categories = categoryRepository.findAllByUserId(user.getId());
         List<CategoryResponseDTO.CategoryViewListWithExpenditureDTO> categoryList
                 = CategoryConverter.toCategoriesViewListWithExpenditureDTO(categories, user, year, month, day);
 
@@ -66,9 +66,9 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
     }
 
     // 주간 - 총 지출액 조회
-    public ExpenseResponseDTO.WeeklyExpenditureViewDTO getWeeklyExpenditure(String userEmail) {
+    public ExpenseResponseDTO.WeeklyExpenditureViewDTO getWeeklyExpenditure(Long userId) {
         // 유저 찾기
-        User user = userRepository.findByEmail(userEmail)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 오늘 날짜 구하기
