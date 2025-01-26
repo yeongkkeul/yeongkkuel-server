@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -19,24 +20,34 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableRabbit
+@Slf4j
 public class RabbitMQConfig {
 
     private final String CHAT_QUEUE_NAME; // RabbitMQ Queue 이름
     private final String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
     private final String CHAT_ROUTING_KEY; // RabbitMQ Binding 이름, TopicExchange를 사용하기에 Binding이 routing 역할을 수행하도록 한다.
     private final String RABBITMQ_HOST;
+    private final int RABBITMQ_PORT;
+    private final String RABBITMQ_USERNAME;
+    private final String RABBITMQ_PASSWORD;
 
     public RabbitMQConfig(
             @Value("${rabbitmq.queue.name}") String CHAT_QUEUE_NAME,
             @Value("${rabbitmq.exchange.name}") String CHAT_EXCHANGE_NAME,
             @Value("${rabbitmq.routing.key}") String CHAT_ROUTING_KEY,
-            @Value("${spring.rabbitmq.host}") String RABBITMQ_HOST
+            @Value("${spring.rabbitmq.host}") String RABBITMQ_HOST,
+            @Value("${spring.rabbitmq.port}") int RABBITMQ_PORT,
+            @Value("${spring.rabbitmq.username}") String RABBITMQ_USERNAME,
+            @Value("${spring.rabbitmq.password}") String RABBITMQ_PASSWORD
     ) {
 
         this.CHAT_QUEUE_NAME = CHAT_QUEUE_NAME;
         this.CHAT_EXCHANGE_NAME = CHAT_EXCHANGE_NAME;
         this.CHAT_ROUTING_KEY = CHAT_ROUTING_KEY;
         this.RABBITMQ_HOST = RABBITMQ_HOST;
+        this.RABBITMQ_PORT = RABBITMQ_PORT;
+        this.RABBITMQ_USERNAME = RABBITMQ_USERNAME;
+        this.RABBITMQ_PASSWORD = RABBITMQ_PASSWORD;
     }
 
     /**
@@ -87,9 +98,9 @@ public class RabbitMQConfig {
 
         CachingConnectionFactory factory = new CachingConnectionFactory();
         factory.setHost(RABBITMQ_HOST);
-        factory.setUsername("guest"); // RabbitMQ 관리자 아이디
-        factory.setPassword("guest"); // RabbitMQ 관리자 비밀번호
-        factory.setPort(5672); // RabbitMQ 연결할 port
+        factory.setUsername(RABBITMQ_USERNAME); // RabbitMQ 관리자 아이디
+        factory.setPassword(RABBITMQ_PASSWORD); // RabbitMQ 관리자 비밀번호
+        factory.setPort(RABBITMQ_PORT); // RabbitMQ 연결할 port
         factory.setVirtualHost("/"); // vhost 지정
 
         return factory;
