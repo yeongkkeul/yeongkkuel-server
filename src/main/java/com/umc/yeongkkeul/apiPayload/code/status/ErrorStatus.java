@@ -33,8 +33,15 @@ public enum ErrorStatus implements BaseErrorCode {
 
     //USER
     _USER_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4005","사용자를 찾을 수 없습니다."),
-    _REFERRALCODE_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4004","존재하지 않은 추천인 코드입니다.");
+    _REFERRALCODE_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4004","존재하지 않은 추천인 코드입니다."),
 
+    // Expense
+    EXPENSE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4001", "지출 내역을 찾을 수 없습니다."),
+    EXPENSE_AMOUNT_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4002", "지출 금액이 유효하지 않습니다.."),
+    EXPENSE_CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4002", "유효하지 않은 지출 카테고리입니다."),
+
+    // Purchase (아이템 이력)
+    Purchase_NOT_FOUND(HttpStatus.BAD_REQUEST, "ITEMH4001", "아이템 이력 기록이 존재하지 않습니다.");
 
 
     private final HttpStatus httpStatus;

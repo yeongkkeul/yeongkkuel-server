@@ -19,6 +19,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class ChatRoom extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -66,6 +67,9 @@ public class ChatRoom extends BaseEntity {
     @OneToMany(mappedBy = "chatroom", cascade = CascadeType.ALL)
     private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
 
+    /*
     @OneToMany(mappedBy = "chatroom", cascade = CascadeType.ALL)
     private List<Message> messageList = new ArrayList<>();
+
+     */
 }

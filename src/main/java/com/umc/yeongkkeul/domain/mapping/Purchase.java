@@ -4,6 +4,7 @@ import com.umc.yeongkkeul.domain.Item;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.common.BaseEntity;
 import com.umc.yeongkkeul.domain.enums.ItemType;
+import com.umc.yeongkkeul.repository.ItemRepository;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -38,4 +39,8 @@ public class Purchase extends BaseEntity {
 
     @Column(name = "is_used", nullable = false)
     private Boolean isUsed;
+
+    public Item getItem() {
+        return item;
+    }
 }
