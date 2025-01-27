@@ -10,6 +10,7 @@ import com.umc.yeongkkeul.domain.mapping.NotificationRead;
 import com.umc.yeongkkeul.repository.NotificationReadRepository;
 import com.umc.yeongkkeul.repository.NotificationRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.web.dto.NotificationAgreedRequestDto;
 import com.umc.yeongkkeul.web.dto.NotificationDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.NotificationDetailsResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -90,5 +91,23 @@ public class NotificationService {
 
         // 알림 목록 Dto 생성
         return NotificationConverter.toNotificationsDto(notifications, contents);
+    }
+
+    /**
+     * 사용자의 알림 수신 여부를 저장한다.
+     *
+     * @param userId 로그인한 사용자 ID
+     * @param notificationAgreedRequestDto 알림 수신 여부
+     * @return 알림 수신 여부
+     */
+    public Boolean setNotificationAgreed(Long userId, NotificationAgreedRequestDto notificationAgreedRequestDto) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        user.setNotificationAgreed(notificationAgreedRequestDto.notificationAgreed());
+        userRepository.save(user);
+
+        return notificationAgreedRequestDto.notificationAgreed();
     }
 }

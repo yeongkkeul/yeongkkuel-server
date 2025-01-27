@@ -2,6 +2,7 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.service.NotificationService;
+import com.umc.yeongkkeul.web.dto.NotificationAgreedRequestDto;
 import com.umc.yeongkkeul.web.dto.NotificationDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.NotificationDetailsResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,7 +45,7 @@ public class NotificationController {
      * @return 로그인한 사용자 알림 목록
      */
     @GetMapping
-    @Operation(summary = "알림 목록 조회", description = "로그인한 사용자의 알림 목록을 조회합니다")
+    @Operation(summary = "알림 목록 조회", description = "로그인한 사용자의 알림 목록을 조회합니다.")
     public ApiResponse<NotificationDetailsResponseDto> getNotifications(@RequestParam(defaultValue = "0") int page) {
 
         Long userId = toId(getCurrentUserId());
@@ -52,7 +53,14 @@ public class NotificationController {
         return ApiResponse.onSuccess(notificationService.getNotifications(userId, page));
     }
 
-    // TODO: 알림 수신
+    @PatchMapping("/settings")
+    @Operation(summary = "알림 수신 설정 변경", description = "사용자가 알림의 수신 여부를 선택할 수 있습니다.")
+    public ApiResponse<Boolean> setNotificationAgreed(@RequestBody @Valid NotificationAgreedRequestDto notificationAgreedRequestDto) {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(notificationService.setNotificationAgreed(userId, notificationAgreedRequestDto));
+    }
 
     // TODO: 읽지 않은 알림이 있는지 확인
 }
