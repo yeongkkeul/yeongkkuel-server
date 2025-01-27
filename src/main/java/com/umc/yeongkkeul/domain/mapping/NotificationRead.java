@@ -4,8 +4,14 @@ import com.umc.yeongkkeul.domain.Notification;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class NotificationRead extends BaseEntity {
 
     @Id
