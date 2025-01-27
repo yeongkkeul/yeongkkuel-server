@@ -9,6 +9,6 @@ import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    @Query("SELECT n FROM Notification n WHERE n.id IN :notificaionIDs")
+    @Query("SELECT n FROM Notification n WHERE n.id IN :notificaionIds")
     List<Notification> findAllByIdIn(@Param("notificationIds") List<Long> notificationIds);
 }

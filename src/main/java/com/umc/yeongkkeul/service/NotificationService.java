@@ -110,4 +110,9 @@ public class NotificationService {
 
         return notificationAgreedRequestDto.notificationAgreed();
     }
+
+    public Boolean isUnreadNotifications(Long userId) {
+
+        return notificationReadRepository.existsByUserId(userId);
+    }
 }

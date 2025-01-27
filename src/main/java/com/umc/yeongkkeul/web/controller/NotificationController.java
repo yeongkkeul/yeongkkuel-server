@@ -62,5 +62,12 @@ public class NotificationController {
         return ApiResponse.onSuccess(notificationService.setNotificationAgreed(userId, notificationAgreedRequestDto));
     }
 
-    // TODO: 읽지 않은 알림이 있는지 확인
+    @GetMapping("/unread")
+    @Operation(summary = "읽지 않은 알림 존재 여부", description = "읽지 않은 알림이 있을 때 알림이 왔다는 표시를 편리하게 하기 위한 API입니다.")
+    public ApiResponse<Boolean> isUnreadNotifications() {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(notificationService.isUnreadNotifications(userId));
+    }
 }
