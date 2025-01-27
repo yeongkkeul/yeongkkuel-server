@@ -3,16 +3,14 @@ package com.umc.yeongkkeul.web.controller;
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.service.NotificationService;
 import com.umc.yeongkkeul.web.dto.NotificationDetailRequestDto;
+import com.umc.yeongkkeul.web.dto.NotificationDetailsResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
 import static com.umc.yeongkkeul.security.FindLoginUser.toId;
@@ -29,10 +27,10 @@ public class NotificationController {
 
     /**
      * @param notificationDetailRequestDto 생성 할 알림 정보
-     * @return 특정 사용자의 알림을 생성
+     * @return 로그인한 사용자의 알림을 생성
      */
     @PostMapping
-    @Operation(summary = "알림 생성", description = "특정 사용자의 알림을 생성합니다.")
+    @Operation(summary = "알림 생성", description = "로그인한 사용자의 알림을 생성합니다.")
     public ApiResponse<Long> createNotification(@RequestBody @Valid NotificationDetailRequestDto notificationDetailRequestDto) {
 
         Long userId = toId(getCurrentUserId());
@@ -40,4 +38,21 @@ public class NotificationController {
         // DTO가 유효하지 않으면 BindException 또는 MethodArgumentNotValidException이 발생
         return ApiResponse.onSuccess(notificationService.createNotification(userId, notificationDetailRequestDto));
     }
+
+    /**
+     * @param page 알림 페이지
+     * @return 로그인한 사용자 알림 목록
+     */
+    @GetMapping
+    @Operation(summary = "알림 목록 조회", description = "로그인한 사용자의 알림 목록을 조회합니다")
+    public ApiResponse<NotificationDetailsResponseDto> getNotifications(@RequestParam(defaultValue = "0") int page) {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(notificationService.getNotifications(userId, page));
+    }
+
+    // TODO: 알림 수신
+
+    // TODO: 읽지 않은 알림이 있는지 확인
 }
