@@ -45,6 +45,7 @@ public class StoreService {
                 .map(purchase -> PurchaseResponseDTO.PurchaseViewDTO.builder()
                         .itemName(purchase.getItem().getName())
                         .itemType(purchase.getItem().getType().toString())
+                        .imgUrl(purchase.getItem().getImgUrl())
                         .build())
                 .collect(Collectors.toList());
 
