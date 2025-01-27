@@ -11,18 +11,14 @@ public class Notification extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
     // TODO: 필요한 타입 있으면 NotificationType에서 추가하시면 됩니다.
-    @Column(name = "type", nullable = false)
+    @Column(name = "notification_type", nullable = false)
     @Enumerated(EnumType.STRING)
-    private NotificationType type;
+    private NotificationType notificationType;
 
-    @Column(name = "content", nullable = false)
-    private String content;
+    @Column(name = "notification_content", nullable = false)
+    private String notificationContent;
 
-    @Column(name = "is_read", nullable = false)
-    private Boolean isRead;
+    @Column(name = "target_url")
+    private String targetUrl;
 }
