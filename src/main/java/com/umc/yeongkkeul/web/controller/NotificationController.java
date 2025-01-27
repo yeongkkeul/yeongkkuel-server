@@ -55,7 +55,7 @@ public class NotificationController {
 
     @PatchMapping("/settings")
     @Operation(summary = "알림 수신 설정 변경", description = "사용자가 알림의 수신 여부를 선택할 수 있습니다.")
-    public ApiResponse<Boolean> setNotificationAgreed(@RequestBody @Valid NotificationAgreedRequestDto notificationAgreedRequestDto) {
+    public ApiResponse<Boolean> setNotificationAgreed(@RequestBody NotificationAgreedRequestDto notificationAgreedRequestDto) {
 
         Long userId = toId(getCurrentUserId());
 
@@ -69,5 +69,12 @@ public class NotificationController {
         Long userId = toId(getCurrentUserId());
 
         return ApiResponse.onSuccess(notificationService.isUnreadNotifications(userId));
+    }
+
+    @PatchMapping("/{notificationId}/read")
+    @Operation(summary = "알림 읽음", description = "사용자가 해당 알림을 읽으면 알림의 상태를 읽음으로 변환하는 API입니다.")
+    public ApiResponse<Boolean> readNotification(@PathVariable Long notificationId) {
+
+        return ApiResponse.onSuccess(notificationService.raedNotification(notificationId));
     }
 }

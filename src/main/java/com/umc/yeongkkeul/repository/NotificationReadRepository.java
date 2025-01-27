@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.repository;
 
+import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.NotificationRead;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,9 +12,10 @@ import java.util.Optional;
 
 public interface NotificationReadRepository extends JpaRepository<NotificationRead, Long> {
 
-    @Query("SELECT n FROM NotificationRead n WHERE n.userId = :userId ORDER BY n.createdAt DESC")
+    @Query("SELECT n FROM NotificationRead n WHERE n.userId.id = :userId ORDER BY n.createdAt DESC")
     Page<NotificationRead> findAllByUserIDOrderByCreatedAtDesc(@Param("userId") Long userId,
                                                          Pageable pageable);
 
-    boolean existsByUserId(Long userId);
+    @Query("SELECT COUNT(n) > 0 FROM NotificationRead n WHERE n.userId.id = :userId AND n.isRead = false")
+    boolean existsByUserId(@Param("userId") Long userId);
 }

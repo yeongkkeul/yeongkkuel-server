@@ -4,16 +4,15 @@ import com.umc.yeongkkeul.domain.Notification;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.stereotype.Service;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Getter
+@Setter
 public class NotificationRead extends BaseEntity {
 
     @Id

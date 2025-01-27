@@ -1,6 +1,7 @@
 package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.handler.NotificationReadHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.NotificationConverter;
 import com.umc.yeongkkeul.domain.Notification;
@@ -113,6 +114,21 @@ public class NotificationService {
 
     public Boolean isUnreadNotifications(Long userId) {
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
         return notificationReadRepository.existsByUserId(userId);
+    }
+
+    public Boolean raedNotification(Long notificationId) {
+
+        NotificationRead notification = notificationReadRepository.findById(notificationId)
+                .orElseThrow(() -> new NotificationReadHandler(ErrorStatus._NOTIFICATION_NOT_FOUND));
+
+        notification.setIsRead(true);
+
+        notificationReadRepository.save(notification);
+
+        return true;
     }
 }

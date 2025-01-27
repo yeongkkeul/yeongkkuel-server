@@ -38,6 +38,9 @@ public enum ErrorStatus implements BaseErrorCode {
     // CHATROOM
     _CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND,"CHATROOM4004","채팅방을 찾을 수 없습니다."),
 
+    // Notification
+    _NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION4004", "해당 사용자의 알림을 찾을 수 없습니다."),
+
     // Expense
     EXPENSE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4001", "지출 내역을 찾을 수 없습니다."),
     EXPENSE_AMOUNT_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4002", "지출 금액이 유효하지 않습니다.."),
