@@ -5,5 +5,6 @@ public enum ItemType {
     SWING,
     TOY,
     BOWL,
-    NEST
+    NEST,
+    MY
 }

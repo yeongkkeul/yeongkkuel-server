@@ -9,4 +9,10 @@ import java.util.Optional;
 
 public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
     List<Purchase> findByUser(User user);
+
+    List<Purchase> findAllByIsUsedAndUser_Email(Boolean isUsed, String email);
+
+    Boolean existsByUserAndItem_Id(User user, Long itemId);
+
+    Optional<Purchase> findByIdAndUser(Long id, User user);
 }
