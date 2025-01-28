@@ -21,6 +21,8 @@ public enum ErrorStatus implements BaseErrorCode {
 
     // User
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "USER4001", "사용자를 찾을 수 없습니다."),
+    DETAIL_REQUIRED_FOR_OTHER_REASON(HttpStatus.BAD_REQUEST, "USER4006", "기타 선택 시 상세 내용이 필요합니다."),
+    INVALID_EXIT_REASON(HttpStatus.BAD_REQUEST, "USER4007", "유효하지 않은 탈퇴 사유입니다."),
 
     // Category
     CATEGORY_DUPLICATE(HttpStatus.CONFLICT, "CATEGORY4004", "동일한 카테고리가 이미 존재합니다."),

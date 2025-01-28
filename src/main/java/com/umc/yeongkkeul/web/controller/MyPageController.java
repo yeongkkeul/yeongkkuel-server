@@ -3,10 +3,7 @@ package com.umc.yeongkkeul.web.controller;
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.service.MyPageCommandService;
 import com.umc.yeongkkeul.service.MyPageQueryService;
-import com.umc.yeongkkeul.web.dto.MyPageInfoRequestDto;
-import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
-import com.umc.yeongkkeul.web.dto.RewardResponseDto;
-import com.umc.yeongkkeul.web.dto.UserReferralCodeResponseDto;
+import com.umc.yeongkkeul.web.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -51,5 +48,13 @@ public class MyPageController {
     public ApiResponse<List<RewardResponseDto>> getRewardList() {
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(myPageQueryService.getRewardList(userId));
+    }
+
+    @Operation(summary = "회원 탈퇴")
+    @DeleteMapping("/api/auth/delete")
+    public ApiResponse<String> deleteUser(@RequestBody UserExitRequestDto userExitRequestDto) {
+        Long userId = toId(getCurrentUserId());
+        myPageCommandService.deleteUser(userId, userExitRequestDto);
+        return ApiResponse.onSuccess("계정 탈퇴 성공입니다.");
     }
 }
