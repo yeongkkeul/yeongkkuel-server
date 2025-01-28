@@ -18,7 +18,7 @@ public class RewardResponseDto {
     public static RewardResponseDto from(Reward reward) {
         return RewardResponseDto.builder()
                 .datetime(reward.getCreatedAt())
-                .record("INDIVIDUAL".equals(reward.getReasonCode().toString()) ? "개인 목표 달성" : "TEAM".equals(reward.getReasonCode().toString()) ? "팀 목표 달성" : null)
+                .record("INDIVIDUAL".equals(reward.getRewardType().toString()) ? "개인 목표 달성" : "TEAM".equals(reward.getRewardType().toString()) ? "팀 목표 달성" : null)
                 .type(reward.getDescription())
                 .reward(reward.getAmount())
                 .build();
