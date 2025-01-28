@@ -51,3 +51,20 @@ rabbitmq:
     name: "chat.exchange" # 사용할 exchange 이름 (구독할 때 사용)
   routing:
     key: "chat.room.*" # routing-key. chat.room.{room_id}를 구독
+
+cloud:
+  aws:
+    s3:
+      bucket: yeongkkeul-s3
+    path:
+      user-profile: user-profile
+      chatroom-profile: chatroom-profile
+      chat: chat
+      store-item: store-item
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false
+    credentials:
+      accessKey: ${S3_ACCESS_KEY_ID}
+      secretKey: ${S3_SECRET_ACCESS_KEY}
