@@ -16,8 +16,9 @@ public class ExpenseRequestDTO {
         @NotNull(message = "날짜 작성은 필수입니다.")
         private LocalDate day;
 
-        @NotNull(message = "카테고리 작성은 필수입니다.")
-        private String category;
+        @NotNull(message = "카테고리 Id 작성은 필수입니다.")
+        // private String category;
+        private Long categoryId;
 
         private String content;
 
@@ -32,6 +33,27 @@ public class ExpenseRequestDTO {
         @NotNull(message = "채팅방 전송 여부 작성은 필수입니다.")
         private Boolean sendChatRoom;
     }
+
+    @Builder
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ExpenseUpdateDTO {
+        @NotNull(message = "날짜 작성은 필수입니다.")
+        private LocalDate day;
+
+        @NotNull(message = "카테고리 Id 작성은 필수입니다.")
+        // private String category;
+        private Long categoryId;
+
+        private String content;
+
+        @NotNull(message = "지출 금액 작성은 필수입니다.")
+        private Integer amount;
+
+        private String expenseImg;
+    }
+
 
     @Builder
     @Data

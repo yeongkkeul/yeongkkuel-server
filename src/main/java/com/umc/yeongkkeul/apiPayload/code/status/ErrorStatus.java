@@ -21,6 +21,8 @@ public enum ErrorStatus implements BaseErrorCode {
 
     // User
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "USER4001", "사용자를 찾을 수 없습니다."),
+    DETAIL_REQUIRED_FOR_OTHER_REASON(HttpStatus.BAD_REQUEST, "USER4006", "기타 선택 시 상세 내용이 필요합니다."),
+    INVALID_EXIT_REASON(HttpStatus.BAD_REQUEST, "USER4007", "유효하지 않은 탈퇴 사유입니다."),
 
     // Category
     CATEGORY_DUPLICATE(HttpStatus.CONFLICT, "CATEGORY4004", "동일한 카테고리가 이미 존재합니다."),
@@ -35,6 +37,9 @@ public enum ErrorStatus implements BaseErrorCode {
     _USER_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4005","사용자를 찾을 수 없습니다."),
     _REFERRALCODE_NOT_FOUND(HttpStatus.NOT_FOUND,"USER4004","존재하지 않은 추천인 코드입니다."),
 
+    // CHATROOM
+    _CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND,"CHATROOM4004","채팅방을 찾을 수 없습니다."),
+
     // Expense
     EXPENSE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4001", "지출 내역을 찾을 수 없습니다."),
     EXPENSE_AMOUNT_ERROR(HttpStatus.BAD_REQUEST, "EXPENSE4002", "지출 금액이 유효하지 않습니다.."),
@@ -43,7 +48,15 @@ public enum ErrorStatus implements BaseErrorCode {
     EXPENSE_DAY_TARGET_EXPENDITURE_NOT_FOUND(HttpStatus.BAD_REQUEST, "EXPENSE4005", "하루 목표 지출액이 존재하지 않습니다."),
 
     // Purchase (아이템 이력)
-    Purchase_NOT_FOUND(HttpStatus.BAD_REQUEST, "ITEMH4001", "아이템 이력 기록이 존재하지 않습니다.");
+    Purchase_NOT_FOUND(HttpStatus.BAD_REQUEST, "ITEMH4001", "아이템 이력 기록이 존재하지 않습니다."),
+    _PURCHASE_NOT_FOUND(HttpStatus.NOT_FOUND,"ITEM4004","구매한 아이템이 아닙니다."),
+    // Reward
+    _NOT_ENOUGH_REWARD(HttpStatus.BAD_REQUEST,"REWARD4001","보유 리워드 부족합니다."),
+
+    //Item
+    _ITEM_NOT_FOUND(HttpStatus.NOT_FOUND,"ITEM4001", "현재 스킨이 존재하지 않습니다.");
+
+
 
 
     private final HttpStatus httpStatus;

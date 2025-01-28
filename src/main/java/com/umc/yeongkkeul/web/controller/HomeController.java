@@ -11,10 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
+import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "홍 API", description = "홈 화면 API 입니다.")
+@Tag(name = "홈 API", description = "홈 화면 API 입니다.")
 //@RequestMapping("/api/home")
 public class HomeController {
 
@@ -23,7 +24,7 @@ public class HomeController {
     @Operation(summary = "홈 화면 조회")
      @GetMapping("/api/home")
     public ApiResponse<HomeResponseDTO.HomeViewDTO> home() {
-        String userEmail = getCurrentUserId();
-        return ApiResponse.onSuccess(homeQueryServiceImpl.viewHome(userEmail));
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(homeQueryServiceImpl.viewHome(userId));
     }
 }

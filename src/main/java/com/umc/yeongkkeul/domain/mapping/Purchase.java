@@ -6,6 +6,7 @@ import com.umc.yeongkkeul.domain.common.BaseEntity;
 import com.umc.yeongkkeul.domain.enums.ItemType;
 import com.umc.yeongkkeul.repository.ItemRepository;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +15,11 @@ import java.time.LocalDateTime;
  * User-Item의 중간 테이블
  */
 @Entity
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Purchase extends BaseEntity {
 
     @Id
@@ -42,5 +48,8 @@ public class Purchase extends BaseEntity {
 
     public Item getItem() {
         return item;
+    }
+    public Boolean getIsUsed(){
+        return isUsed;
     }
 }

@@ -52,6 +52,8 @@ public class SecurityConfig
                                 "/api/logout", // 로그아웃 엔드포인트
                                 "/health" // health check용
                         ).permitAll() // Swagger 경로 허용
+                        .requestMatchers("/ws/**").permitAll() // WebSocket 엔드포인트 허용
+                        //.requestMatchers("/chat/**").permitAll() // WebSocket 엔드포인트 허용
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManagement ->

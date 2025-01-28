@@ -3,11 +3,17 @@ package com.umc.yeongkkeul.domain;
 import com.umc.yeongkkeul.domain.common.BaseEntity;
 import com.umc.yeongkkeul.domain.enums.ItemType;
 import jakarta.persistence.*;
+import lombok.*;
 
 /**
  * 상점 아이템
  */
 @Entity
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Item extends BaseEntity {
 
     @Id
@@ -33,6 +39,9 @@ public class Item extends BaseEntity {
     }
     public ItemType getType(){
         return type;
+    }
+    public String getImgUrl(){
+        return imageUrl;
     }
 }
 

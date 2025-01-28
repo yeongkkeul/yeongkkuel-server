@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.converter;
 
+import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.Purchase;
 import com.umc.yeongkkeul.web.dto.PurchaseResponseDTO;
 
@@ -11,7 +12,8 @@ public class PurchaseConverter {
     public static PurchaseResponseDTO.PurchaseViewDTO toPurchaseViewDTO(Purchase purchase){
         return new PurchaseResponseDTO.PurchaseViewDTO(
                 purchase.getItem() != null ? purchase.getItem().getName() : "No Item - Name",
-                purchase.getItem() != null ? purchase.getItem().getType().name() : "No Item - Type"
+                purchase.getItem() != null ? purchase.getItem().getType().name() : "No Item - Type",
+                purchase.getItem() != null ? purchase.getItem().getImgUrl() : "No Item - ImgUrl"
         );
     }
 
