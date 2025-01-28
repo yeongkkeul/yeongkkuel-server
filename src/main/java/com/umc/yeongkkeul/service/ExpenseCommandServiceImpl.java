@@ -29,13 +29,13 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
 
     // 유저의 지출 내역 생성
     @Override
-    public Expense createExpense(Long userId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
+    public Expense createExpense(Long userId, ExpenseRequestDTO.ExpenseDTO request){
         // 유저 찾기
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기
-        Category category = categoryRepository.findByName(categoryName)
+        Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ExpenseHandler(ErrorStatus.EXPENSE_CATEGORY_NOT_FOUND));
 
         // 권한 검증: 카테고리 주인이 현재 유저인지
@@ -56,12 +56,12 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
 
     // 유저의 지출 내역 수정
     @Override
-    public Expense updateExpense(Long userId, Long expenseId, String categoryName, ExpenseRequestDTO.ExpenseDTO request){
+    public Expense updateExpense(Long userId, Long expenseId, ExpenseRequestDTO.ExpenseUpdateDTO request){
         // 유저 찾기
         User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
         // 유저의 카테고리 찾기
-        Category category = categoryRepository.findByName(categoryName)
+        Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ExpenseHandler(ErrorStatus.EXPENSE_CATEGORY_NOT_FOUND));
 
         // 권한 검증: 카테고리 주인이 현재 유저인지
@@ -82,16 +82,8 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
         expense.setDay(request.getDay());
         expense.setCategory(category);
         expense.setContent(request.getContent());
+        expense.setAmount(request.getAmount());
         expense.setImageUrl(request.getExpenseImg());
-
-        Integer amount = request.getAmount();
-
-        // is_no_spending(무지출 여부)가 true이면 지출 0원
-        if (request.getIsExpense() == true) {
-            amount = 0;
-        }
-
-        expense.setAmount(amount);
 
         return expenseRepository.save(expense);
     }

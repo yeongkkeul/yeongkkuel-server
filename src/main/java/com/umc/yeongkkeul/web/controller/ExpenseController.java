@@ -33,9 +33,7 @@ public class ExpenseController {
     ) {
         Long userId = toId(getCurrentUserId());
 
-        String categoryName = request.getCategory();
-
-        Expense response = expenseCommandService.createExpense(userId, categoryName, request);
+        Expense response = expenseCommandService.createExpense(userId, request);
         return ApiResponse.onSuccess(response);
     }
 
@@ -43,13 +41,11 @@ public class ExpenseController {
     @Operation(summary = "지출 내역 수정",description = "지출 수정 내역을 입력합니다.")
     public ApiResponse<Expense> updateExpense(
             @PathVariable("expenseId") Long expenseId,
-            @RequestBody @Valid ExpenseRequestDTO.ExpenseDTO request
+            @RequestBody @Valid ExpenseRequestDTO.ExpenseUpdateDTO request
     ){
         Long userId = toId(getCurrentUserId());
 
-        String categoryName = request.getCategory();
-
-        Expense response = expenseCommandService.updateExpense(userId, expenseId, categoryName, request);
+        Expense response = expenseCommandService.updateExpense(userId, expenseId, request);
         return ApiResponse.onSuccess(response);
     }
 
