@@ -37,6 +37,10 @@ public class AmazonS3Manager{
         return amazonS3.getUrl(amazonConfig.getBucket(), keyName).toString();
     }
 
+    public String getFileUrl(String keyName) {
+        return amazonS3.getUrl(amazonConfig.getBucket(), keyName).toString();
+    }
+
     public String generateUserProfileKeyName(Uuid uuid) {
         return amazonConfig.getUserProfilePath() + '/' + uuid.getUuid();
     }
