@@ -4,6 +4,9 @@ import com.umc.yeongkkeul.domain.Notification;
 import com.umc.yeongkkeul.domain.mapping.NotificationRead;
 import com.umc.yeongkkeul.web.dto.NotificationDetailsResponseDto;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,11 +37,37 @@ public class NotificationConverter {
                     notification.getNotificationContent(),
                     notification.getTargetUrl(),
                     notificationRead.getIsRead(),
+                    createdatToTimestamp(notification.getCreatedAt()),
                     notification.getCreatedAt()
             ));
         }
 
         // NotificationDetailsResponseDto로 래핑하여 반환
         return new NotificationDetailsResponseDto(details);
+    }
+
+    /**
+     * @param createdAt 생성일
+     * @return LocalDateTime 타입의 생성일을 주어진 기준에 따라 String으로 변환한다.
+     */
+    public static String createdatToTimestamp(LocalDateTime createdAt) {
+
+        LocalDateTime localDateTime = LocalDateTime.now();
+
+        Duration duration = Duration.between(createdAt, localDateTime);
+
+        if (duration.toHours() < 1) {
+            // 1시간 이하 차이
+            return duration.toMinutes() + "분 전";
+        } else if (duration.toHours() < 24) {
+            // 1시간 이상 24시간 이하 차이
+            return duration.toHours() + "시간 전";
+        } else if (duration.toHours() < 48) {
+            // 24시간 이상 48시간 이하 차이
+            return createdAt.format(DateTimeFormatter.ofPattern("HH:mm"));
+        } else {
+            // 48시간 이상 차이
+            return createdAt.format(DateTimeFormatter.ofPattern("MM/dd"));
+        }
     }
 }
