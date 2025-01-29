@@ -3,10 +3,14 @@ package com.umc.yeongkkeul.service;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
+import com.umc.yeongkkeul.converter.ChatRoomConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.User;
+import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
+import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.web.dto.ChatRoomDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.MessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +20,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -31,8 +36,11 @@ public class ChatService {
 
     private final UserRepository userRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMembershipRepository chatRoomMembershipRepository;
+
     private final RabbitTemplate rabbitTemplate; // RabbitMQ를 통해 메시지를 전송하는 템플릿
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
+
     private final String READ_STATUS_KEY_PREFIX = "read:message:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
 
@@ -111,5 +119,30 @@ public class ChatService {
 
         String redisKey = "chat:room:" + messageDto.chatRoomId() + ":message";
         redisTemplate.opsForList().leftPush(redisKey, messageDto);
+    }
+
+    /**
+     * 로그인한 사용자를 방장으로 한 채팅방을 생성하고 채팅방-사용자 정보를 저장합니다.
+     *
+     * @param userId
+     * @param chatRoomDetailRequestDto 채팅방 생성 DTO
+     * @return 생성한 채팅방의 ID를 반환합니다.
+     */
+    @Transactional
+    public Long createChatRoom(Long userId, ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
+
+        // 방장
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        // 채팅방 저장
+        ChatRoom chatRoom = ChatRoomConverter.toChatRoomEntity(chatRoomDetailRequestDto);
+        ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
+
+        // 채팅방-사용자 저장
+        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, savedChatRoom);
+        chatRoomMembershipRepository.save(chatRoomMembership);
+
+        return savedChatRoom.getId();
     }
 }

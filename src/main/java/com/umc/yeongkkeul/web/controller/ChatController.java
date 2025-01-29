@@ -90,27 +90,4 @@ public class ChatController {
         log.info("The user with senderID has left the chat room.");
         chatService.saveMessages(exitMessageDto);
     }
-
-    /**
-     * 특정 채팅방의 모든 메시지를 조회.
-     * 클라이언트가 REST API로 "/chat/{chatRoomId}" 경로에 GET 요청을 보낼 때 호출.
-     *
-     * @param chatRoomId  조회할 채팅방 ID
-     * @return ResponseEntity<List<MessageDto>> 채팅 메시지 리스트
-     *
-     * 주의: 이 메서드는 서버 DB에서 데이터를 반복적으로 가져오므로 성능 문제가 발생할 수 있음.
-     *       가능한 한 호출 횟수를 줄이는 방식으로 개선 필요.
-     */
-    // TODO: 로컬 DB와 서버 DB의 사용 여부에 따라 로직을 수정해야 한다.
-    @GetMapping("/chat/{chatRoomId}")
-    public ResponseEntity<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
-
-        // TODO: 로그인한 회원의 ID
-
-        // User - chatroom에서 해당 user가 구독하고 있는 채팅방의 메시지만 디비에서 가져옴.
-
-        List<MessageDto> messageDtos = chatService.getMessages(chatRoomId);
-
-        return ResponseEntity.ok().body(messageDtos);
-    }
 }

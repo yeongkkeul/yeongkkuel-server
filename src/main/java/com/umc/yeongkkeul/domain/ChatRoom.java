@@ -32,7 +32,7 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "password", length = 4)
     private String password;
 
-    // 설명
+    // 규칙
     @Column(name = "description", length = 200)
     private String description;
 
