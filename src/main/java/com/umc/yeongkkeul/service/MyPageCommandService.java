@@ -2,6 +2,7 @@ package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
+import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.UserExitReason;
 import com.umc.yeongkkeul.domain.enums.ExitReason;
@@ -13,6 +14,7 @@ import com.umc.yeongkkeul.web.dto.UserExitRequestDto;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional
@@ -23,12 +25,20 @@ public class MyPageCommandService {
     private final UserExitReasonRepository userExitReasonRepository;
     private final MyPageQueryService myPageQueryService;
 
+    private final AmazonS3Manager amazonS3Manager;
+
     // TODO: 프로필사진 수정 (string -> 이미지 파일로)
-    public MyPageInfoResponseDto updateUserInfo(Long userId, MyPageInfoRequestDto mypageInfoRequestDto) {
+    public MyPageInfoResponseDto updateUserInfo(Long userId, MyPageInfoRequestDto mypageInfoRequestDto, MultipartFile profileImage) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
-        user.updateProfile(mypageInfoRequestDto.getNickname(), mypageInfoRequestDto.getGender(),mypageInfoRequestDto.getAgeGroup(), mypageInfoRequestDto.getJob(),mypageInfoRequestDto.getProfileImageUrl());
+        String profileImageUrl = null;
+        if (profileImage != null && !profileImage.isEmpty()) {
+            String keyName = amazonS3Manager.generateUserProfileKeyName(user.getId());
+            profileImageUrl = amazonS3Manager.uploadFile(keyName, profileImage);
+        }
+
+        user.updateProfile(mypageInfoRequestDto.getNickname(), mypageInfoRequestDto.getGender(),mypageInfoRequestDto.getAgeGroup(), mypageInfoRequestDto.getJob(), profileImageUrl);
         userRepository.save(user);
 
         double weeklyAchievementRate = myPageQueryService.caculateWeeklyAchievementRate(user);
