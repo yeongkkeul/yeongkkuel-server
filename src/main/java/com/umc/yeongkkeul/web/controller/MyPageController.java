@@ -54,6 +54,14 @@ public class MyPageController {
         return ApiResponse.onSuccess(myPageQueryService.getRewardList(userId));
     }
 
+    @Operation(summary = "하루 목표 지출액 수정")
+    @PatchMapping("/api/expenditures/target")
+    public ApiResponse<MyPageInfoResponseDto> updateDayTargetExpenditure(@RequestBody ExpenseRequestDTO.DayTargetExpenditureRequestDto dayTargetExpenditureRequestDto) {
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(myPageCommandService.updateDayTargetExpenditure(userId, dayTargetExpenditureRequestDto));
+    }
+
     @Operation(summary = "회원 탈퇴")
     @DeleteMapping("/api/auth/delete")
     public ApiResponse<String> deleteUser(@RequestBody UserExitRequestDto userExitRequestDto) {

@@ -47,8 +47,10 @@ public class MyPageQueryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
-        double weeklyAchievementRate = caculateWeeklyAchievementRate(user); // weeklyAchievementRate 계산
-
+        Double weeklyAchievementRate = null;
+        if (user.getDayTargetExpenditure() != null) {
+            weeklyAchievementRate = caculateWeeklyAchievementRate(user); // weeklyAchievementRate 계산
+        }
         return MyPageInfoResponseDto.of(user, weeklyAchievementRate);
     }
 
