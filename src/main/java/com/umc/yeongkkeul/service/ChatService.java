@@ -5,7 +5,6 @@ import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
-import com.umc.yeongkkeul.converter.ExpenseConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
@@ -118,13 +117,11 @@ public class ChatService {
         /*
         User sender = userRepository.findById(messageDto.senderId())
                 .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
-
          */
 
         /*
         ChatRoom chatRoom = chatRoomRepository.findById(messageDto.chatRoomId())
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
-
          */
 
         // TODO: ID와 timestamp도 같이 생성해줘야 한다.
@@ -173,6 +170,7 @@ public class ChatService {
 
         // 최근 활동을 확인하기 위해 Redis에서 가장 마지막에 저장된 List를 가져오는 로직
         String redisKey = "chat:room:" + chatRoomId + ":message";
+        // FIXME: 예외처리 필요
         MessageDto lastMessage = (MessageDto) redisTemplate.opsForList().index(redisKey, -1);
         String lastActiviy = convertToLastActivity(lastMessage.timestamp());
 
