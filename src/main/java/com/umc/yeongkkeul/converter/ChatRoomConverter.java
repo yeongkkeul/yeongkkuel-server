@@ -5,8 +5,8 @@ import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
-import com.umc.yeongkkeul.web.dto.ChatRoomDetailRequestDto;
-import com.umc.yeongkkeul.web.dto.ChatRoomDetailResponseDto;
+import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
+import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

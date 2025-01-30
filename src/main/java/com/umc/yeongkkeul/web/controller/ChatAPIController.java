@@ -1,10 +1,10 @@
 package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.service.ChatService;
-import com.umc.yeongkkeul.web.dto.ChatRoomDetailRequestDto;
-import com.umc.yeongkkeul.web.dto.ChatRoomDetailResponseDto;
-import com.umc.yeongkkeul.web.dto.ChatRoomJoinPasswordRequestDto;
-import com.umc.yeongkkeul.web.dto.MessageDto;
+import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
+import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
+import com.umc.yeongkkeul.web.dto.chat.ChatRoomJoinPasswordRequestDto;
+import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -40,7 +40,7 @@ public class ChatAPIController {
      *       가능한 한 호출 횟수를 줄이는 방식으로 개선 필요.
      */
     // TODO: 로컬 DB와 서버 DB의 사용 여부에 따라 로직을 수정해야 한다.
-    // TODO: 로컬 DB에 저장한다고 해도 채팅방 상태가 바뀔 수도 있기 때문에 이를 지속적으로 추적하거나 요청해도 변경점을 찾아야 한다.
+    // TODO: 로컬 DB에 저장한다고 해도 채팅방 상태가 바뀔 수도 있기 때문에 이를 지속적으로 추적하거나 요청해도 변경점을 찾아야 하는 로직이 필요하다.
     @GetMapping("/{chatRoomId}")
     @Operation(summary = "특정 채팅방 메시지 조회", description = "특정 채팅방의 모든 메시지를 조회합니다.")
     public ResponseEntity<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
