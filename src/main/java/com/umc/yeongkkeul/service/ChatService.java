@@ -2,17 +2,22 @@ package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
+import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
+import com.umc.yeongkkeul.converter.ExpenseConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
+import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
+import com.umc.yeongkkeul.repository.ExpenseRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
+import com.umc.yeongkkeul.web.dto.chat.ReceiptMessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
@@ -40,6 +45,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
+    private final ExpenseRepository expenseRepository;
 
     private final RabbitTemplate rabbitTemplate; // RabbitMQ를 통해 메시지를 전송하는 템플릿
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
@@ -216,6 +222,25 @@ public class ChatService {
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
         return password.equals(chatRoom.getPassword());
+    }
+
+    /**
+     * @param expenseId 지출 내역 ID
+     * @return 지출 내역 ID로 지출 정보를 가져와서 영수증으로 반환하는 메서드
+     */
+    public ReceiptMessageDto getReceipt(Long expenseId) {
+
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ExpenseHandler(ErrorStatus.EXPENSE_NOT_FOUND));
+
+        return ReceiptMessageDto.builder()
+                .senderName(expense.getUser().getNickname())
+                .category(expense.getCategory().getName())
+                .content(expense.getContent())
+                .amount(expense.getAmount())
+                .imageUrl(expense.getImageUrl())
+                .isNoSpending(expense.isNoSpending())
+                .build();
     }
 
     /**

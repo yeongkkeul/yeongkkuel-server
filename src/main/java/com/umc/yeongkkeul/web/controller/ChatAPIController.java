@@ -1,10 +1,7 @@
 package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.service.ChatService;
-import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
-import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
-import com.umc.yeongkkeul.web.dto.chat.ChatRoomJoinPasswordRequestDto;
-import com.umc.yeongkkeul.web.dto.chat.MessageDto;
+import com.umc.yeongkkeul.web.dto.chat.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -86,10 +83,29 @@ public class ChatAPIController {
         return ResponseEntity.ok(chatService.validateChatRoomPassword(chatRoomId, chatRoomJoinPasswordRequestDto.password()));
     }
 
+    /**
+     * @param chatRoomId
+     * @return 채팅방 가입을 위해 사용자에게 보여줄 채팅방 정보를 조회합니다.
+     */
     @GetMapping("/{chatRoomId}/detail")
     @Operation(summary = "채팅방 정보 조회", description = "특정 채팅방의 정보를 조회합니다.")
     public ResponseEntity<ChatRoomDetailResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
 
         return ResponseEntity.ok().body(chatService.getChatRoomDetail(chatRoomId));
+    }
+
+    /**
+     * 클라이언트는 메시지 타입을 통해 해당 메시지가 영수증인 것을 확인합니다.
+     * 메시지 타입이 영수증이면 해당 메시지의 content에는 Expense 테이블의 ID가 있습니다.
+     * 클라이언트는 테이블의 ID를 통해 영수증 조회 메서드를 GET 요청합니다.
+     *
+     * @param expenseId
+     * @return
+     */
+    @GetMapping("/receipts/{expenseId}")
+    @Operation(summary = "영수증 조회", description = "채팅방에 올라온 영수증의 정보를 조회합니다.")
+    public ResponseEntity<ReceiptMessageDto> getReceiptDetail(@PathVariable Long expenseId) {
+
+        return ResponseEntity.ok().body(chatService.getReceipt(expenseId));
     }
 }
