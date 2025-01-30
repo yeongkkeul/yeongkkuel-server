@@ -2,6 +2,9 @@ package com.umc.yeongkkeul.web.dto;
 
 import lombok.Builder;
 
+/**
+ * 채팅방 정보
+ */
 @Builder
 public record ChatRoomDetailResponseDto(
 

@@ -51,7 +51,7 @@ public class ChatController {
      * FIXME: message 특성 상 로그인 한 사용자를 알기 힘드므로 보안 상의 문제가 있을 수도 있다.
      *
      * @param roomId      채팅방 ID
-     * @param messageDto  전송된 메시지 데이터
+     * @param enterMessageDto  전송된 메시지 데이터
      */
     @MessageMapping("chat.enter.{roomId}")
     public void enterUser(@DestinationVariable("roomId") Long roomId, EnterMessageDto enterMessageDto) {
