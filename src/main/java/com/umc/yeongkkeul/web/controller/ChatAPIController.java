@@ -2,6 +2,8 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.ChatRoomDetailRequestDto;
+import com.umc.yeongkkeul.web.dto.ChatRoomDetailResponseDto;
+import com.umc.yeongkkeul.web.dto.ChatRoomJoinPasswordRequestDto;
 import com.umc.yeongkkeul.web.dto.MessageDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -60,5 +62,33 @@ public class ChatAPIController {
         Long userId = toId(getCurrentUserId());
 
         return ResponseEntity.ok().body(chatService.createChatRoom(userId, chatRoomDetailRequestDto));
+    }
+
+    // FIXME: 해당 API를 쓸지 생각해보자. STOMP로 보내줘도 됨.
+    /*
+    @PostMapping("/{chatRoomId}")
+    @Operation(summary = "채팅방 가입", description = "그룹 채팅방을 가입합니다.")
+    public ResponseEntity<Long> joinChatRoom(@PathVariable Long chatRoomId) {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ResponseEntity.ok().body(chatService.joinChatRoom(userId, chatRoomId));
+    }
+     */
+
+    @PostMapping("/{chatRoomId}/validate")
+    @Operation(summary = "채팅방 패스워드 확인", description = "그룹 채팅방을 가입 할 때 사용하는 패스워드를 사용합니다. 채팅방 정보 조회의 isPassword를 통해 패스워드 여부를 확인")
+    public ResponseEntity<Boolean> validateChatRoomPassword(@PathVariable Long chatRoomId, @RequestBody ChatRoomJoinPasswordRequestDto chatRoomJoinPasswordRequestDto) {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ResponseEntity.ok(chatService.validateChatRoomPassword(chatRoomId, chatRoomJoinPasswordRequestDto.password()));
+    }
+
+    @GetMapping("/{chatRoomId}/detail")
+    @Operation(summary = "채팅방 정보 조회", description = "특정 채팅방의 정보를 조회합니다.")
+    public ResponseEntity<ChatRoomDetailResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
+
+        return ResponseEntity.ok().body(chatService.getChatRoomDetail(chatRoomId));
     }
 }

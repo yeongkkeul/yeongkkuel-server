@@ -10,16 +10,17 @@ import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
-import com.umc.yeongkkeul.web.dto.ChatRoomDetailRequestDto;
-import com.umc.yeongkkeul.web.dto.MessageDto;
+import com.umc.yeongkkeul.web.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -65,7 +66,7 @@ public class ChatService {
      *
      * @param messageDto 전송할 메시지 정보
      */
-    public void enterMessage(MessageDto messageDto) {
+    private void enterMessage(MessageDto messageDto) {
 
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
     }
@@ -99,6 +100,7 @@ public class ChatService {
 
     /**
      * 메시지를 DB에 저장하고 Redis에 캐시.
+     * FIXME: 트랜잭션 범위 떄문에 이에 관한 생각을 조금 해봐야 한다. 현재 메시지는 단순히 백업 용도이기 때문에 중요도가 RDB보다 낮기에 RDB와 트랜잭션을 묶지 않았다.
      *
      * @param messageDto 저장할 메시지 정보
      */
@@ -117,12 +119,15 @@ public class ChatService {
 
          */
 
+        // TODO: ID와 timestamp도 같이 생성해줘야 한다.
+
         String redisKey = "chat:room:" + messageDto.chatRoomId() + ":message";
         redisTemplate.opsForList().leftPush(redisKey, messageDto);
     }
 
     /**
      * 로그인한 사용자를 방장으로 한 채팅방을 생성하고 채팅방-사용자 정보를 저장합니다.
+     * 클라이언트는 이 API 호출 후 웹 소켓을 연결(안되 있는 상태면)한 뒤, 해당 채팅방을 Subscribe 한다.
      *
      * @param userId
      * @param chatRoomDetailRequestDto 채팅방 생성 DTO
@@ -140,9 +145,109 @@ public class ChatService {
         ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
 
         // 채팅방-사용자 저장
-        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, savedChatRoom);
+        // 방장이기에 isHost에 true값 설정
+        boolean isHost = true;
+        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, savedChatRoom, isHost);
         chatRoomMembershipRepository.save(chatRoomMembership);
 
         return savedChatRoom.getId();
+    }
+
+    /**
+     * @param chatRoomId
+     * @return 해당 채팅방의 정보를 반환하는 메서드 - 채팅방 가입하기
+     */
+    public ChatRoomDetailResponseDto getChatRoomDetail(Long chatRoomId) {
+
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 최근 활동을 확인하기 위해 Redis에서 가장 마지막에 저장된 List를 가져오는 로직
+        String redisKey = "chat:room:" + chatRoomId + ":message";
+        MessageDto lastMessage = (MessageDto) redisTemplate.opsForList().index(redisKey, -1);
+        String lastActiviy = convertToLastActivity(lastMessage.timestamp());
+
+        return ChatRoomConverter.toChatRoomDetailResponseDto(chatRoom, lastActiviy);
+    }
+
+    /**
+     * 해당 사용자가 특정 채팅방에 입장을 할 때 채팅방-사용자 관계 테이블에 정보를 저장하는 메서드.
+     *
+     * @param userId
+     * @param chatRoomId
+     * @return 채팅방 ID
+     */
+    @Transactional
+    public void joinChatRoom(Long userId, Long chatRoomId, MessageDto messageDto) {
+
+        // 가입 희망 사용자
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        // 가입할 그룹 채팅방
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        boolean isHost = false; // 호스트가 아니기에 false
+        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, chatRoom, isHost);
+
+        // 채팅방-사용자 관계 테이블 저장
+        chatRoomMembershipRepository.save(chatRoomMembership);
+
+        // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
+        try {
+            enterMessage(messageDto);
+        } catch (AmqpException e) {
+            throw new AmqpException("메시지 전송 실패", e); // 예외를 던져서 트랜잭션 롤백 유도
+        }
+    }
+
+    /**
+     * @param chatRoomId
+     * @param password 패스워드 정보
+     * @return 사용자가 입력한 패스워드와 채팅방의 패스워드가 일치하면 True를 반환합니다.
+     */
+    public Boolean validateChatRoomPassword(Long chatRoomId, String password) {
+
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        return password.equals(chatRoom.getPassword());
+    }
+
+    /**
+     * 주어진 기준에 따라 문자열로 반환. 일주일을 초과할 경우 NULL 반환.
+     *
+     * @param lastActivityTime 마지막 메시지를 보낸 시간
+     * @return 마지막 활동 시간을 현재 시간과 비교하여 문자열로 반환
+     */
+    private String convertToLastActivity(LocalDateTime lastActivityTime) {
+
+        LocalDateTime localDateTime = LocalDateTime.now();
+
+        Duration duration = Duration.between(lastActivityTime, localDateTime);
+
+        if (duration.toMinutes() < 1) {
+            // 1분 이하 차이
+            return duration.toSeconds() + "초 전 활동";
+        }
+
+        if (duration.toHours() < 1) {
+            // 1시간 이하 차이
+            return duration.toMinutes() + "분 전 활동";
+        } else if (duration.toHours() < 24) {
+            // 1시간 이상 24시간 이하 차이
+            return duration.toHours() + "시간 전 활동";
+        }
+
+        if (duration.toDays() < 7) {
+            // 2일 이상 6일 이하 차이
+            return duration.toDays() + "일 전 활동";
+        } else if (duration.toDays() < 8) {
+            // 일주일 차이
+            return "일주일 전 활동";
+        }
+
+        return null;
     }
 }
