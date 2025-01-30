@@ -1,5 +1,7 @@
 package com.umc.yeongkkeul.web.dto;
 
+import com.umc.yeongkkeul.domain.enums.AgeGroup;
+import com.umc.yeongkkeul.domain.enums.Job;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -74,5 +76,21 @@ public class ExpenseResponseDTO {
         Integer weekExpenditure;
         Integer dayTargetExpenditure;
         List<ExpensePerDayDTO> expenses;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WeeklyAverageExpenditureViewDTO {
+        AgeGroup age;
+        Job job;
+        Integer topPercent;
+        Integer averageExpenditure;
+        Integer myAverageExpenditure;
+        Integer lastWeekExpenditure;
+        Integer thisWeekExpenditure;
+        String highestExpenditureCategoryName; // 지출액이 가장 큰 카테고리 이름
+        List<CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO> categories;
     }
 }

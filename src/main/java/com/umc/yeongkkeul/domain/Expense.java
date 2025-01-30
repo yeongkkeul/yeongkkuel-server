@@ -50,4 +50,7 @@ public class Expense extends BaseEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
+    public Boolean getIsNoSpending() {
+        return isNoSpending; // true이면 무지출
+    }
 }

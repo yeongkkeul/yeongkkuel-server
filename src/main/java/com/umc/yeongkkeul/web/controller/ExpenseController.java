@@ -97,4 +97,11 @@ public class ExpenseController {
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(expenseQueryServiceImpl.getWeeklyExpenditure(userId));
     }
+
+    @GetMapping("/api/expenditures/week/average")
+    @Operation(summary = "주간 - 주간 통계 조회", description = "해당 주간의 통계를 조회합니다.")
+    public ApiResponse<ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO> WeeklyAverageExpenditureView(){
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.weeklyAverageExpenditureViewDTO(userId));
+    }
 }
