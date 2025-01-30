@@ -38,7 +38,7 @@ public class Expense extends BaseEntity {
     private String imageUrl;
 
     @Column(name = "is_send")
-    private boolean isSend;
+    private Boolean isSend;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
