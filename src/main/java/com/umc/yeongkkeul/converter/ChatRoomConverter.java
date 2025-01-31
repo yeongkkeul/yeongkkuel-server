@@ -56,9 +56,7 @@ public class ChatRoomConverter {
     public static ChatRoomDetailResponseDto toChatRoomDetailResponseDto(ChatRoom chatRoom, String lastActivity) {
 
         LocalDateTime localDateTime = LocalDateTime.now();
-
-        Duration duration = Duration.between(chatRoom.getCreatedAt(), localDateTime);
-        Long days = duration.toDays() + 1;
+        String daysStr = (chatRoom.getCreatedAt() != null) ? (Duration.between(chatRoom.getCreatedAt(), localDateTime).toDays() + 1) + "일 째" : null;
 
         // TODO: 엔티티 수정 후 추가
         return ChatRoomDetailResponseDto.builder()
@@ -66,12 +64,12 @@ public class ChatRoomConverter {
                 .lastActivity(lastActivity)
                 .chatRoomAgeRange(String.valueOf(chatRoom.getAgeGroupFilter()))
                 .chatRoomJob(String.valueOf(chatRoom.getJobFilter()))
-                .createdDaysElapsed(days + "일 째")
+                .createdDaysElapsed(daysStr)
                 .participationCount(chatRoom.getParticipationCount())
                 .chatRoomMaxUserCount(chatRoom.getMaxParticipants())
                 .chatRoomSpendingAmountGoal(chatRoom.getDailySpendingGoalFilter())
                 .chatRoomImageUrl(chatRoom.getImageUrl())
-                .isPassword(chatRoom.getPassword().isEmpty())
+                .isPassword(chatRoom.getPassword() != null)
                 .build();
     }
 }

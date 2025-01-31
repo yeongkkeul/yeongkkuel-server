@@ -170,11 +170,17 @@ public class ChatService {
 
         // 최근 활동을 확인하기 위해 Redis에서 가장 마지막에 저장된 List를 가져오는 로직
         String redisKey = "chat:room:" + chatRoomId + ":message";
-        // FIXME: 예외처리 필요
-        MessageDto lastMessage = (MessageDto) redisTemplate.opsForList().index(redisKey, -1);
-        String lastActiviy = convertToLastActivity(lastMessage.timestamp());
+        Object lastMessageObject = redisTemplate.opsForList().index(redisKey, -1);
 
-        return ChatRoomConverter.toChatRoomDetailResponseDto(chatRoom, lastActiviy);
+        // redisKey가 존재하지 않거나 리스트가 비어 있으면 null 반환
+        if (lastMessageObject != null) {
+            MessageDto lastMessage = (MessageDto) lastMessageObject;
+            String lastActiviy = convertToLastActivity(lastMessage.timestamp());
+            return ChatRoomConverter.toChatRoomDetailResponseDto(chatRoom, lastActiviy);
+        }
+        else {
+            return ChatRoomConverter.toChatRoomDetailResponseDto(chatRoom, null);
+        }
     }
 
     /**
@@ -249,30 +255,16 @@ public class ChatService {
      */
     private String convertToLastActivity(LocalDateTime lastActivityTime) {
 
-        LocalDateTime localDateTime = LocalDateTime.now();
+        // lastActivityTime이 null이라면 메서드 종료
+        if (lastActivityTime == null) return null;
 
-        Duration duration = Duration.between(lastActivityTime, localDateTime);
+        long seconds = Duration.between(lastActivityTime, LocalDateTime.now()).getSeconds();
 
-        if (duration.toMinutes() < 1) {
-            // 1분 이하 차이
-            return duration.toSeconds() + "초 전 활동";
-        }
-
-        if (duration.toHours() < 1) {
-            // 1시간 이하 차이
-            return duration.toMinutes() + "분 전 활동";
-        } else if (duration.toHours() < 24) {
-            // 1시간 이상 24시간 이하 차이
-            return duration.toHours() + "시간 전 활동";
-        }
-
-        if (duration.toDays() < 7) {
-            // 2일 이상 6일 이하 차이
-            return duration.toDays() + "일 전 활동";
-        } else if (duration.toDays() < 8) {
-            // 일주일 차이
-            return "일주일 전 활동";
-        }
+        if (seconds < 60) return seconds + "초 전 활동";
+        if (seconds < 3600) return (seconds / 60) + "분 전 활동";
+        if (seconds < 86400) return (seconds / 3600) + "시간 전 활동";
+        if (seconds < 604800) return (seconds / 86400) + "일 전 활동";
+        if (seconds < 691200) return  "일주일 전 활동";
 
         return null;
     }
