@@ -1,16 +1,24 @@
 package com.umc.yeongkkeul.converter;
 
+import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.domain.Category;
+import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
+import com.umc.yeongkkeul.repository.ExpenseRepository;
+import com.umc.yeongkkeul.service.ExpenseQueryServiceImpl;
 import com.umc.yeongkkeul.web.dto.CategoryRequestDTO;
 import com.umc.yeongkkeul.web.dto.CategoryResponseDTO;
 import com.umc.yeongkkeul.web.dto.ExpenseResponseDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class CategoryConverter {
+
     // req 객체를 카테고리 객체로 변환
     public static Category toCategoryDTO(CategoryRequestDTO.CategoryDTO request, User user){
         return Category.builder()
@@ -75,6 +83,41 @@ public class CategoryConverter {
                                 .map(expense -> new ExpenseResponseDTO.ExpenseListView2DTO(
                                         expense.getContent(), expense.getAmount()))
                                 .collect(Collectors.toList())
+                ))
+                .collect(Collectors.toList());
+    }
+
+    // 카테고리별 주간 지출액 계산
+    public static Integer getCategoryWithWeeklyExpenditure(List<Expense> expenses, Long categoryId) {
+
+        int CategoryWithWeeklyExpenditure = expenses.stream()
+                .filter(expense -> expense.getCategory().getId().equals(categoryId)) // 해당 카테고리 id로 비교
+                .mapToInt(Expense::getAmount)  // 지출 금액 합산
+                .sum();
+
+        return CategoryWithWeeklyExpenditure;
+    }
+
+    // 주간 지출에서 가장 많은 지출을 한 카테고리 이름 찾기
+    public static String getCategoryWithHighestExpenditure(User user, List<Category> categoryList, List<Expense> expenses, LocalDate startDay, LocalDate endDay) {
+        // 각 카테고리별 주간 지출액을 계산하고 가장 큰 지출액을 가진 카테고리 찾기
+        CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO highestExpenditureCategory = categoryViewListWithWeeklyExpenditureDTO(categoryList, expenses, user, startDay, endDay).stream()
+                .max(Comparator.comparingInt(CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO::getTotalExpenditure)) // 지출액 비교
+                .orElseThrow(() -> new ExpenseHandler(ErrorStatus.EXPENSE_CATEGORY_NOT_FOUND)); // 예외 처리
+
+        return highestExpenditureCategory.getCategoryName(); // 가장 큰 지출액을 가진 카테고리 이름 반환
+    }
+
+    // 주간 지출 조회 화면 - 해당 주간동안의 카테고리별 지출 총액 조회
+    public static List<CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO> categoryViewListWithWeeklyExpenditureDTO(List<Category> categoryList, List<Expense> expenses, User user, LocalDate startDay, LocalDate endDay) {
+
+        return categoryList.stream()
+                .map(category -> new CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO(
+                        category.getName(),
+                        category.getRed(),
+                        category.getGreen(),
+                        category.getBlue(),
+                        getCategoryWithWeeklyExpenditure(expenses, category.getId())
                 ))
                 .collect(Collectors.toList());
     }

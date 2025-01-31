@@ -32,7 +32,7 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "password", length = 4)
     private String password;
 
-    // 규칙
+    // 설명
     @Column(name = "description", length = 200)
     private String description;
 
@@ -58,7 +58,6 @@ public class ChatRoom extends BaseEntity {
 
     // 하루 목표지출액 필터
     @Column(name="daily_spending_goal_filter", nullable = false)
-    @Max(99999999)
     private Integer dailySpendingGoalFilter;
 
     // 프로필 이미지

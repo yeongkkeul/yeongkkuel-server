@@ -114,8 +114,6 @@ public class RabbitMQConfig {
 
         RabbitTemplate rabbitTemplate = new RabbitTemplate(createConnectionFactory()); // RabbitTemplate이 사용할 연결 팩토리를 지정
         rabbitTemplate.setMessageConverter(messageConverter()); // 메시지 처리와 직렬화/역직렬화를 자동으로 처리하는 Converter 설정
-
-        // TODO: mandatory, setConfirmCallback과 같이 추가적인 예외 처리 작업이 필요하다.
         return rabbitTemplate;
     }
 
