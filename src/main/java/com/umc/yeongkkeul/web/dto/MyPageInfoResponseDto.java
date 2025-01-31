@@ -18,9 +18,9 @@ public class MyPageInfoResponseDto {
     private String profileImageUrl;
     private Integer dayTargetExpenditure;
     private int rewardBalance;
-    private double weeklyAchievementRate;
+    private Double weeklyAchievementRate;
 
-    public static MyPageInfoResponseDto of(User user, double weeklyAchievementRate) {
+    public static MyPageInfoResponseDto of(User user, Double weeklyAchievementRate) {
         return MyPageInfoResponseDto.builder()
                 .nickname(user.getNickname())
                 .gender(user.getGender())

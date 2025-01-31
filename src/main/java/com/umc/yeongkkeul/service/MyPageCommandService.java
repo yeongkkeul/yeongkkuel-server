@@ -1,18 +1,22 @@
 package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
+import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.UserExitReason;
 import com.umc.yeongkkeul.domain.enums.ExitReason;
 import com.umc.yeongkkeul.repository.UserExitReasonRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
 import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
 import com.umc.yeongkkeul.web.dto.MyPageInfoRequestDto;
 import com.umc.yeongkkeul.web.dto.UserExitRequestDto;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional
@@ -23,12 +27,20 @@ public class MyPageCommandService {
     private final UserExitReasonRepository userExitReasonRepository;
     private final MyPageQueryService myPageQueryService;
 
-    // TODO: 프로필사진 수정 (string -> 이미지 파일로)
-    public MyPageInfoResponseDto updateUserInfo(Long userId, MyPageInfoRequestDto mypageInfoRequestDto) {
+    private final AmazonS3Manager amazonS3Manager;
+
+    // 프로필 정보 수정
+    public MyPageInfoResponseDto updateUserInfo(Long userId, MyPageInfoRequestDto mypageInfoRequestDto, MultipartFile profileImage) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
-        user.updateProfile(mypageInfoRequestDto.getNickname(), mypageInfoRequestDto.getGender(),mypageInfoRequestDto.getAgeGroup(), mypageInfoRequestDto.getJob(),mypageInfoRequestDto.getProfileImageUrl());
+        String profileImageUrl = null;
+        if (profileImage != null && !profileImage.isEmpty()) {
+            String keyName = amazonS3Manager.generateUserProfileKeyName(user.getId());
+            profileImageUrl = amazonS3Manager.uploadFile(keyName, profileImage);
+        }
+
+        user.updateProfile(mypageInfoRequestDto.getNickname(), mypageInfoRequestDto.getGender(),mypageInfoRequestDto.getAgeGroup(), mypageInfoRequestDto.getJob(), profileImageUrl);
         userRepository.save(user);
 
         double weeklyAchievementRate = myPageQueryService.caculateWeeklyAchievementRate(user);
@@ -62,5 +74,21 @@ public class MyPageCommandService {
         userExitReasonRepository.save(exitReason);
 
         userRepository.deleteById(user.getId());
+    }
+
+    // 하루 목표 지출액 수정
+    public MyPageInfoResponseDto updateDayTargetExpenditure(Long userId, ExpenseRequestDTO.DayTargetExpenditureRequestDto dayTargetExpenditureRequestDto){
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        if (dayTargetExpenditureRequestDto.getDayTargetExpenditure() == null) {
+            user.setDayTargetExpenditure(null);
+        } else if (dayTargetExpenditureRequestDto.getDayTargetExpenditure() < 0){
+            throw new ExpenseHandler(ErrorStatus.EXPENSE_DAY_TARGET_EXPENDITURE_ERROR);
+        } else {
+            user.setDayTargetExpenditure(dayTargetExpenditureRequestDto.getDayTargetExpenditure());
+            userRepository.save(user);
+        }
+
+        return myPageQueryService.getUserInfo(userId);
     }
 }

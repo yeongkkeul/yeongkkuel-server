@@ -7,7 +7,9 @@ import com.umc.yeongkkeul.web.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -36,11 +38,13 @@ public class MyPageController {
         return ApiResponse.onSuccess(myPageQueryService.getUserInfo(userId));
     }
 
-    @Operation(summary = "프로필 수정", description = "프로필 사진 관련 수정 예정입니다")
-    @PatchMapping("/api/mypage")
-    public ApiResponse<MyPageInfoResponseDto> updateUserInfo(@RequestBody MyPageInfoRequestDto myPageInfoRequestDto) {
+    @Operation(summary = "프로필 수정", description = "multipart/form-data로 보내야 합니다")
+    @PatchMapping(value = "/api/mypage", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ApiResponse<MyPageInfoResponseDto> updateUserInfo(@RequestPart("myPageInfoRequestDto") MyPageInfoRequestDto myPageInfoRequestDto,
+                                                             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage) {
+
         Long userId = toId(getCurrentUserId());
-        return ApiResponse.onSuccess(myPageCommandService.updateUserInfo(userId, myPageInfoRequestDto));
+        return ApiResponse.onSuccess(myPageCommandService.updateUserInfo(userId, myPageInfoRequestDto, profileImage));
     }
 
     @Operation(summary = "리워드 목록 조회")
@@ -48,6 +52,14 @@ public class MyPageController {
     public ApiResponse<List<RewardResponseDto>> getRewardList() {
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(myPageQueryService.getRewardList(userId));
+    }
+
+    @Operation(summary = "하루 목표 지출액 수정")
+    @PatchMapping("/api/expenditures/target")
+    public ApiResponse<MyPageInfoResponseDto> updateDayTargetExpenditure(@RequestBody ExpenseRequestDTO.DayTargetExpenditureRequestDto dayTargetExpenditureRequestDto) {
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(myPageCommandService.updateDayTargetExpenditure(userId, dayTargetExpenditureRequestDto));
     }
 
     @Operation(summary = "회원 탈퇴")
