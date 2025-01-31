@@ -6,11 +6,13 @@ import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.CategoryConverter;
 import com.umc.yeongkkeul.domain.Category;
 import com.umc.yeongkkeul.domain.Expense;
+import com.umc.yeongkkeul.domain.Reward;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.repository.CategoryRepository;
 import com.umc.yeongkkeul.repository.ExpenseRepository;
+import com.umc.yeongkkeul.repository.RewardRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
 import com.umc.yeongkkeul.web.dto.CategoryResponseDTO;
 import com.umc.yeongkkeul.web.dto.ExpenseResponseDTO;
@@ -22,6 +24,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,6 +36,7 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final ExpenseRepository expenseRepository;
+    private final RewardRepository rewardRepository;
 
     // 일간 - 유저의 하루 목쵸 지출액 조회
     @Override
@@ -217,12 +221,12 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
     private ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO handleUnDecidedUser(AgeGroup userAgeGroup, Job userJob, Integer lastWeekExpenditure, Integer thisWeekExpenditure, String highestExpenditureCategoryName, List<CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO> categoryList) {
         // UNDECIDED일 경우 반환할 다른 응답 형태
         return ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO.builder()
-                .age(userAgeGroup)  // 또는 다른 기본값 설정
+                .age(userAgeGroup)
                 .job(userJob)
                 .lastWeekExpenditure(lastWeekExpenditure)
                 .thisWeekExpenditure(thisWeekExpenditure)
                 .highestExpenditureCategoryName(highestExpenditureCategoryName)
-                .categories(categoryList) // 카테고리 빈 리스트로 반환
+                .categories(categoryList)
                 .build();
     }
 
@@ -370,4 +374,98 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
         return calculatePercentileForGroup(usersInSameGroup, user, startDay, endDay, userDailyExpenditure);
     }
 
+    // 유저의 월간 지출액 조회
+    public ExpenseResponseDTO.MonthlyExpenditureViewDTO monthlyExpenditureViewDTO(Long userId, Integer year, Integer month){
+        // 유저 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        int lastYear = (month == 1) ? year-1 : year;
+        int lastMonth = (month == 1) ? 12 : month-1;
+
+        // 선택된 그 달의 한달 누적 지출액
+        // 주간 총 지출액 구할 때 썼던 함수 재사용
+        int thisMonthExpenditure = totalWeeklyExpenditure(user, LocalDate.of(year, month, 1), LocalDate.of(year, month, 1).withDayOfMonth(LocalDate.of(year, month, 1).lengthOfMonth()));
+
+        // 선택된 그 달에 해당되는 월, 일별 지출액 리스트
+        List<ExpenseResponseDTO.MonthExpenseDTO> thisMonthExpenditureList = monthExpenseList(user, LocalDate.of(year, month, 1), LocalDate.of(year, month, 1).withDayOfMonth(LocalDate.of(year, month, 1).lengthOfMonth()));
+
+        // 선택된 그 달에 해당되는 전 달의 월, 일별 지출액 리스트
+        List<ExpenseResponseDTO.MonthExpenseDTO> lastMonthExpenditureList = monthExpenseList(user, LocalDate.of(lastYear, lastMonth, 1), LocalDate.of(lastYear, lastMonth, 1).withDayOfMonth(LocalDate.of(lastYear, lastMonth, 1).lengthOfMonth()));
+
+        // 이번달에 받은 리워드 목록
+        List<Reward> rewards = rewardRepository.findByUserIdAndYearAndMonth(user.getId(), year, month);
+
+        int thisMonthReward = rewards.stream()
+                .mapToInt(Reward::getAmount)  // 각 리워드 금액 합산
+                .sum();
+
+        // 만약 하루 목표 지출액을 설정하지 않은 유저라면, 목표 달성 일수 제외 반환하기
+        if (user.getDayTargetExpenditure() == null){
+            return ExpenseResponseDTO.MonthlyExpenditureViewDTO.builder()
+                    .totalMonthExpenditure(thisMonthExpenditure)
+                    .selectedMonthExpenses(thisMonthExpenditureList)
+                    .previousMonthExpenses(lastMonthExpenditureList)
+                    .rewards(thisMonthReward)
+                    .build();
+        }
+
+        // 목표 달성 일수 = 하루 목표 지출액 >= 하루 지출액 일 경우 목표 달성
+        int achieveDays = calculateAchieveDays(user, thisMonthExpenditureList);
+
+        return ExpenseResponseDTO.MonthlyExpenditureViewDTO.builder()
+                .totalMonthExpenditure(thisMonthExpenditure)
+                .selectedMonthExpenses(thisMonthExpenditureList)
+                .previousMonthExpenses(lastMonthExpenditureList)
+                .achieveDays(achieveDays)
+                .rewards(thisMonthReward)
+                .build();
+    }
+
+    // 선택된 달에 해당되는 월, 일별 지출액 리스트
+    // user, startDay, endDay 넘겨
+    public List<ExpenseResponseDTO.MonthExpenseDTO> monthExpenseList(User user, LocalDate startDay, LocalDate endDay) {
+        // 해당 월의 일별 지출액 리스트 (지출 내역이 있는 날만)
+        List<ExpenseResponseDTO.MonthExpenseDTO> monthlyExpenditureList = new ArrayList<>();
+
+        // 지출 내역 가져오기
+        List<Expense> expenses = expenseRepository.findByUserIdAndExpenseDayAtBetween(user.getId(), startDay, endDay);
+
+        // 지출 내역이 있는 날만 리스트에 추가할거고
+        // 날짜별로 지출액을 합산
+        expenses.stream()
+                .collect(Collectors.groupingBy(Expense::getDay))  // 날짜별로 그룹화
+                .forEach((date, dailyExpenses) -> {
+                    int dailyExpenditure = dailyExpenses.stream()
+                            .mapToInt(Expense::getAmount)  // 해당 날짜의 지출 금액 합산
+                            .sum();
+
+                    monthlyExpenditureList.add(new ExpenseResponseDTO.MonthExpenseDTO(
+                            date.getYear(),
+                            date.getMonthValue(),
+                            date,
+                            dailyExpenditure
+                    ));
+                });
+
+        // 날짜 오름차순으로 정렬
+        monthlyExpenditureList.sort(Comparator.comparing(ExpenseResponseDTO.MonthExpenseDTO::getExpenseDate));
+
+        return monthlyExpenditureList;
+    }
+
+    // 사용자의 목표 달성 일수 구하기
+    // 사용자가 지정한 하루 목표 지출액 >= 하루 지출액 일 경우 -> 목표 달성 일수
+    public Integer calculateAchieveDays(User user, List<ExpenseResponseDTO.MonthExpenseDTO> monthExpenses){
+        int ahieveDays = 0;
+        int dayTargetExpenditure = user.getDayTargetExpenditure();
+
+        for (ExpenseResponseDTO.MonthExpenseDTO expense : monthExpenses) { // 지출이 있는 날의 총 지출액
+            if (dayTargetExpenditure >= expense.getExpenditure()) {
+                ahieveDays++;
+            }
+        }
+
+        return ahieveDays;
+    }
 }
