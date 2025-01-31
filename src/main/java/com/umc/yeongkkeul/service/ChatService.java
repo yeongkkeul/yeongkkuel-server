@@ -8,27 +8,31 @@ import com.umc.yeongkkeul.converter.ChatRoomConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
+import com.umc.yeongkkeul.domain.enums.AgeGroup;
+import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
 import com.umc.yeongkkeul.repository.ExpenseRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
-import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
-import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
-import com.umc.yeongkkeul.web.dto.chat.MessageDto;
-import com.umc.yeongkkeul.web.dto.chat.ReceiptMessageDto;
+import com.umc.yeongkkeul.web.dto.chat.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * ChatService 클래스
@@ -54,6 +58,8 @@ public class ChatService {
 
     @Value("${rabbitmq.exchange.name}")
     private String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
+
+    private final int CHATROOM_PAGING_SIZE = 30; // 한 페이지 당 최대 30개를 조회
 
     /**
      * 메시지를 특정 채팅방으로 전송.
@@ -250,6 +256,37 @@ public class ChatService {
                 .amount(expense.getAmount())
                 .imageUrl(expense.getImageUrl())
                 .isNoSpending(expense.getIsNoSpending())
+                .build();
+    }
+
+    /**
+     * 필터에 맞는 모든 그룹 채팅방을 탐색하는 메서드입니다.
+     * null 값이면 필터링에서 무시합니다.
+     *
+     * @param page 페이지
+     * @param age 연령대
+     * @param minAmount 최소 목표 금액
+     * @param maxAmount 최대 목표 금액
+     * @param job 직업 분야
+     * @return
+     */
+    public PublicChatRoomsDetailResponseDto getPublicChatRooms(int page, String age, Integer minAmount, Integer maxAmount, String job) {
+
+        // 필터에 맞는 채팅방을 한 페이지를 조회한다.
+        Pageable pageable = PageRequest.of(page, CHATROOM_PAGING_SIZE); // 한 페이지 당 최대 30개를 가져온다.
+
+        AgeGroup ageEnum = (age != null) ? AgeGroup.valueOf(age) : null; // 연령대 타입 변환
+        Job jobEnum = (job != null) ? Job.valueOf(job.toUpperCase()) : null; // 직업 타입 변환
+
+        // null 값이면 필터링에서 무시합니다.
+        // 최소 금액이 null 값이면 0원으로, 최대 금액이 null 값이면 2147483647 로 변환해서 필터링합니다.
+        Page<ChatRoom> chatRoomPage = chatRoomRepository.findAllWithPagination(ageEnum, minAmount, maxAmount, jobEnum, pageable);
+        List<ChatRoom> chatRoomList = chatRoomPage.getContent();
+
+        return PublicChatRoomsDetailResponseDto.builder()
+                .publicChatRoomDetailDtos(chatRoomList.stream()
+                        .map(chatRoom -> PublicChatRoomsDetailResponseDto.PublicChatRoomDetailDto.of(chatRoom))
+                        .toList())
                 .build();
     }
 

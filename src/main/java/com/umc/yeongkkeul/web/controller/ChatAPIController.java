@@ -108,4 +108,27 @@ public class ChatAPIController {
 
         return ResponseEntity.ok().body(chatService.getReceipt(expenseId));
     }
+
+    // FIXME: ENUM 상수 값을 적적한 한글로 변환하는 로직이 필요.
+    /**
+     * null 값이면 필터링에 포함하지 않습니다.
+     *
+     * @param age 연령대
+     * @param minAmount 최소 금액 (null 값이면 0원으로)
+     * @param maxAmount 최대 금액 (null 값이면 2147483647원으로)
+     * @param job 직업 분야
+     * @param page 페이지 (기본값 0)
+     * @return 필터링에 맞는 모든 그룹 채팅방을 조회합니다.
+     */
+    @Operation(summary = "채팅방 둘러보기", description = "필터에 맞는 채팅방을 페이징 단위로 조회합니다.")
+    @GetMapping("/expore")
+    public ResponseEntity<PublicChatRoomsDetailResponseDto> getPublicChatRooms(
+            @RequestParam(required = false) String age,
+            @RequestParam(required = false) Integer minAmount,
+            @RequestParam(required = false) Integer maxAmount,
+            @RequestParam(required = false) String job,
+            @RequestParam(defaultValue = "0") int page) {
+
+        return ResponseEntity.ok().body(chatService.getPublicChatRooms(page, age, minAmount, maxAmount, job));
+    }
 }
