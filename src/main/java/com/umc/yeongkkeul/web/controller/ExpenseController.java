@@ -104,4 +104,14 @@ public class ExpenseController {
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(expenseQueryServiceImpl.weeklyAverageExpenditureViewDTO(userId));
     }
+
+    @GetMapping("/api/expenditures/month/{year}/{month}")
+    @Operation(summary = "월간 - 달력 조회", description = "해당 월의 지출 내역을 조회합니다.")
+    public ApiResponse<ExpenseResponseDTO.MonthlyExpenditureViewDTO> MonthlyExpenditureView(
+            @PathVariable("year") Integer year,
+            @PathVariable("month") Integer month
+    ){
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(expenseQueryServiceImpl.monthlyExpenditureViewDTO(userId, year, month));
+    }
 }
