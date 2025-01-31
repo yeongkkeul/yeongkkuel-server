@@ -67,6 +67,7 @@ public class ChatController {
                 .timestamp(enterMessageDto.timestamp()) // 메시지 타임스탬프
                 .build();
 
+        // FIXME: Exception 예외 처리 추가 코드가 필요
         // 사용자-채팅방 관계 테이블 저장과 가입 메시지 전송.
         try {
             chatService.joinChatRoom(enterMessageDto.senderId(), roomId, messageDto);
