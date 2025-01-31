@@ -50,4 +50,16 @@ public class CategoryResponseDTO {
         int blue;
         List<ExpenseResponseDTO.ExpenseListView2DTO> expenses;
     }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CategoryViewListWithWeeklyExpenditureDTO{
+        String categoryName;
+        int red;
+        int green;
+        int blue;
+        Integer totalExpenditure;
+    }
 }

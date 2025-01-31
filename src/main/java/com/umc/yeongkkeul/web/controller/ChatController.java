@@ -1,18 +1,17 @@
 package com.umc.yeongkkeul.web.controller;
 
+import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.service.ChatService;
-import com.umc.yeongkkeul.web.dto.MessageDto;
+import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
+import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
+import org.springframework.amqp.AmqpException;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * ChatController 클래스
@@ -44,26 +43,42 @@ public class ChatController {
     /**
      * 유저가 특정 채팅방(roomId)에 입장했을 때 처리.
      * "chat.enter.{roomId}" 경로로 STOMP 메시지가 전송되면 호출.
+     * FIXME: message 특성 상 로그인 한 사용자를 알기 힘드므로 보안 상의 문제가 있을 수도 있다.
      *
      * @param roomId      채팅방 ID
-     * @param messageDto  전송된 메시지 데이터
+     * @param enterMessageDto  전송된 메시지 데이터
      */
     @MessageMapping("chat.enter.{roomId}")
-    public void enterUser(@DestinationVariable("roomId") Long roomId, MessageDto messageDto) {
+    public void enterUser(@DestinationVariable("roomId") Long roomId, EnterMessageDto enterMessageDto) {
+
+        // 비밀번호 재확인 -> 앞선 과정에서 했지만 보안을 위해서 한 번 더 해야한다.
+        if (!chatService.validateChatRoomPassword(enterMessageDto.chatRoomId(), enterMessageDto.password())) {
+            log.error("채팅방의 비밀번호가 일치하지 않습니다.");
+            throw new ChatRoomHandler(ErrorStatus._CHATROOM_NO_PERMISSION);
+        }
 
         // 유저 입장을 알리는 메시지 생성
-        MessageDto enterMessageDto = MessageDto.builder()
-                .id(messageDto.id()) // 메시지 ID
-                .messageType(messageDto.messageType()) // 메시지 타입
-                .content(messageDto.senderId() + "님이 채팅방에 입장하였습니다.") // 입장 메시지 내용
-                .chatRoomId(messageDto.chatRoomId()) // 채팅방 ID
-                .senderId(messageDto.senderId()) // 발신자 ID
-                .timestamp(messageDto.timestamp()) // 메시지 타임스탬프
+        MessageDto messageDto = MessageDto.builder()
+                .id(enterMessageDto.id()) // 메시지 ID
+                .messageType(enterMessageDto.messageType()) // 메시지 타입
+                .content(enterMessageDto.senderId() + "님이 채팅방에 입장하였습니다.") // 입장 메시지 내용
+                .chatRoomId(enterMessageDto.chatRoomId()) // 채팅방 ID
+                .senderId(enterMessageDto.senderId()) // 발신자 ID
+                .timestamp(enterMessageDto.timestamp()) // 메시지 타임스탬프
                 .build();
 
-        chatService.enterMessage(enterMessageDto);
-        log.info("The user with senderID has entered the chat room.");
-        chatService.saveMessages(enterMessageDto);
+        // 사용자-채팅방 관계 테이블 저장과 가입 메시지 전송.
+        try {
+            chatService.joinChatRoom(enterMessageDto.senderId(), roomId, messageDto);
+        }
+        catch (AmqpException e) {
+            log.error("The message was not sent by AmqpException {}.", e); return;
+        } catch (Exception e) {
+            log.error("error {}.", e); return;
+        }
+
+        log.info("The user with senderID has entered the chat room."); // JPA 저장과 메시지 전송이 성공함.
+        chatService.saveMessages(messageDto); // Redis에 가입 메시지 저장
     }
 
     /**
@@ -89,28 +104,5 @@ public class ChatController {
         chatService.exitMessage(exitMessageDto);
         log.info("The user with senderID has left the chat room.");
         chatService.saveMessages(exitMessageDto);
-    }
-
-    /**
-     * 특정 채팅방의 모든 메시지를 조회.
-     * 클라이언트가 REST API로 "/chat/{chatRoomId}" 경로에 GET 요청을 보낼 때 호출.
-     *
-     * @param chatRoomId  조회할 채팅방 ID
-     * @return ResponseEntity<List<MessageDto>> 채팅 메시지 리스트
-     *
-     * 주의: 이 메서드는 서버 DB에서 데이터를 반복적으로 가져오므로 성능 문제가 발생할 수 있음.
-     *       가능한 한 호출 횟수를 줄이는 방식으로 개선 필요.
-     */
-    // TODO: 로컬 DB와 서버 DB의 사용 여부에 따라 로직을 수정해야 한다.
-    @GetMapping("/chat/{chatRoomId}")
-    public ResponseEntity<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
-
-        // TODO: 로그인한 회원의 ID
-
-        // User - chatroom에서 해당 user가 구독하고 있는 채팅방의 메시지만 디비에서 가져옴.
-
-        List<MessageDto> messageDtos = chatService.getMessages(chatRoomId);
-
-        return ResponseEntity.ok().body(messageDtos);
     }
 }

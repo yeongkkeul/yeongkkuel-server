@@ -1,6 +1,7 @@
 package com.umc.yeongkkeul.repository;
 
 import com.umc.yeongkkeul.domain.Expense;
+import com.umc.yeongkkeul.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +19,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("SELECT e FROM Expense e WHERE e.user.id = :userId AND DATE(e.day) BETWEEN :startDate AND :endDate")
     List<Expense> findByUserIdAndExpenseDayAtBetween(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    boolean existsByUserAndDay(User user, LocalDate currentDay);
 }

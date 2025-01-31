@@ -39,6 +39,7 @@ public enum ErrorStatus implements BaseErrorCode {
 
     // CHATROOM
     _CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND,"CHATROOM4004","채팅방을 찾을 수 없습니다."),
+    _CHATROOM_NO_PERMISSION(HttpStatus.FORBIDDEN,"CHATROOM4003","채팅방 비밀번호가 일치 하지 않습니다."),
 
     // Notification
     _NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION4004", "해당 사용자의 알림을 찾을 수 없습니다."),
@@ -58,9 +59,6 @@ public enum ErrorStatus implements BaseErrorCode {
 
     //Item
     _ITEM_NOT_FOUND(HttpStatus.NOT_FOUND,"ITEM4001", "현재 스킨이 존재하지 않습니다.");
-
-
-
 
     private final HttpStatus httpStatus;
     private final String code;
@@ -82,7 +80,6 @@ public enum ErrorStatus implements BaseErrorCode {
                 .code(code)
                 .isSuccess(false)
                 .httpStatus(httpStatus)
-                .build()
-                ;
+                .build();
     }
 }

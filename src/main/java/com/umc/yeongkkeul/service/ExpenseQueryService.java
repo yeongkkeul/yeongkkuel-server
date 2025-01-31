@@ -8,4 +8,8 @@ public interface ExpenseQueryService {
     ExpenseResponseDTO.DayTargetExpenditureViewDTO DayTargetExpenditureViewDTO(Long userId);
 
     ExpenseResponseDTO.CategoryListExpenditureViewDTO CategoryExpenseListView(Long userId, Integer year, Integer month, Integer day);
+
+    ExpenseResponseDTO.WeeklyExpenditureViewDTO getWeeklyExpenditure(Long userId);
+
+    ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO weeklyAverageExpenditureViewDTO(Long userId);
 }

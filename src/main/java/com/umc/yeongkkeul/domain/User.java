@@ -133,4 +133,8 @@ public class User extends BaseEntity {
     public void setDayTargetExpenditure(Integer dayTargetExpenditure) {
         this.dayTargetExpenditure = dayTargetExpenditure;
     }
+
+    public AgeGroup getAge() {
+        return ageGroup;
+    }
 }

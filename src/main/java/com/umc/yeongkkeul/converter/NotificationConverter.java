@@ -56,18 +56,23 @@ public class NotificationConverter {
 
         Duration duration = Duration.between(createdAt, localDateTime);
 
-        if (duration.toHours() < 1) {
-            // 1시간 이하 차이
-            return duration.toMinutes() + "분 전";
-        } else if (duration.toHours() < 24) {
-            // 1시간 이상 24시간 이하 차이
-            return duration.toHours() + "시간 전";
-        } else if (duration.toHours() < 48) {
-            // 24시간 이상 48시간 이하 차이
-            return createdAt.format(DateTimeFormatter.ofPattern("HH:mm"));
+        if (duration.toMinutes() < 1) {
+            // 1분 이하 차이
+            return duration.toSeconds() + "초 전";
         } else {
-            // 48시간 이상 차이
-            return createdAt.format(DateTimeFormatter.ofPattern("MM/dd"));
+            if (duration.toHours() < 1) {
+                // 1시간 이하 차이
+                return duration.toMinutes() + "분 전";
+            } else if (duration.toHours() < 24) {
+                // 1시간 이상 24시간 이하 차이
+                return duration.toHours() + "시간 전";
+            } else if (duration.toHours() < 48) {
+                // 24시간 이상 48시간 이하 차이
+                return createdAt.format(DateTimeFormatter.ofPattern("HH:mm"));
+            } else {
+                // 48시간 이상 차이
+                return createdAt.format(DateTimeFormatter.ofPattern("MM/dd"));
+            }
         }
     }
 }
