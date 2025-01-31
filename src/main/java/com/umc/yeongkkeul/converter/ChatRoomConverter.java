@@ -58,7 +58,7 @@ public class ChatRoomConverter {
         LocalDateTime localDateTime = LocalDateTime.now();
         String daysStr = (chatRoom.getCreatedAt() != null) ? (Duration.between(chatRoom.getCreatedAt(), localDateTime).toDays() + 1) + "일 째" : null;
 
-        // TODO: 엔티티 수정 후 추가
+        // TODO: 엔티티 수정 후 추가.
         return ChatRoomDetailResponseDto.builder()
                 .chatRoomTitle(chatRoom.getTitle())
                 .lastActivity(lastActivity)
