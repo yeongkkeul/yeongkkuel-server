@@ -180,8 +180,11 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
         List<CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO> categoryList
                 = CategoryConverter.categoryViewListWithWeeklyExpenditureDTO(categories, expenses, user, startDay, endDay);
 
-        // 이번주 하루 평균 지출액 -> expense의 getDay가 null이 아닌 날 갯수 이용
-        int dailyAverage = dailyAverageExpenditure(expenses, thisWeekExpenditure);
+        // 사용자가 직접 지출을 작성한 날 갯수
+        int numberOfExpenditureDay = dailyAverageExpenditure(expenses);
+
+        // 하루 평균 지출액 계산
+        int dailyAverage = numberOfExpenditureDay > 0 ? thisWeekExpenditure / numberOfExpenditureDay : 0;
 
         // 유저의 상위 백분위 구하기
         int userPercentile = calculateTopPercentile(user, startDay, endDay);
@@ -189,8 +192,8 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
         // 유저의 동일한 나이대 및 직업 다른 유저들의 하루 평균 지출액
         int averageExpenditure = calculateAverageExpenditureForGroup(user, startDay, endDay);
 
-        // 나이대와 직업이 둘 다 UNDECIDED인 경우, 다른 응답 객체 반환
-        if (user.getAgeGroup() == AgeGroup.UNDECIDED && user.getJob() == Job.UNDECIDED) {
+        // 나이대와 직업이 둘 다 UNDECIDED인 경우 또는 사용자가 직접 지출을 작성한 날의 갯수가 일주일의 절반도 되지 않을 경우, 다른 응답 객체 반환
+        if (user.getAgeGroup() == AgeGroup.UNDECIDED && user.getJob() == Job.UNDECIDED || numberOfExpenditureDay < 4) {
             // 여기서 나이대와 직업이 UNDECIDED일 경우 다른 응답을 리턴
             // 이때 저번주에 얼마 사용, 이번주에 얼마 사용, 많이 쓴 카테고리 이름, 카테고리별 지출 내역 리스트 넘기기
             return handleUnDecidedUser(user.getAgeGroup(), user.getJob(), lastWeekExpenditure, thisWeekExpenditure, hightestExpenditureCategoryName ,categoryList); // 다른 응답 포맷을 리턴하는 메서드 호출
@@ -236,19 +239,17 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
         return weeklyExpenditure;
     }
 
-    // 이번주 하루 평균 지출액 = 이번주 총 지출액 / 사용자가 지출을 작성한 날 갯수
-    // 매개변수 = 유저의 지출 내역, 월요일, 오늘 날짜
-    // 월요일 ~ 오늘 날짜 중에서 사용자가 직접 지출을 작성한 날 갯수
-    public Integer dailyAverageExpenditure(List<Expense> expenses, Integer thisWeekExpenditure) {
+    // 이번주 하루 평균 지출액 = 사용자가 지출을 작성한 날 갯수
+    public Integer dailyAverageExpenditure(List<Expense> expenses) {
         // 사용자가 지출 내역을 작성한 날을 세는 로직 (하루에 여러 개의 지출 내역이 있어도 하루를 한 번만 카운트)
-        int daysWithSpending = (int) expenses.stream()
+        return (int) expenses.stream()
                 .filter(expense -> expense.getAmount() > 0 || expense.getIsNoSpending() == true) // 지출 내역을 작성한 날만 계산
                 .map(expense -> expense.getDay()) // 날짜 기준으로 그룹화
                 .distinct() // 같은 날은 한 번만 카운트
                 .count();
 
         // 하루 평균 지출액 계산
-        return daysWithSpending > 0 ? thisWeekExpenditure / daysWithSpending : 0;
+        // return daysWithSpending > 0 ? thisWeekExpenditure / daysWithSpending : 0;
     }
 
     // 유저의 나이, 직업과 동일한 유저 그룹 찾기
