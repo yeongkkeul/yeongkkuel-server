@@ -1,10 +1,13 @@
 package com.umc.yeongkkeul.web.dto;
 
+import com.umc.yeongkkeul.domain.enums.AgeGroup;
+import com.umc.yeongkkeul.domain.enums.Job;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class ExpenseResponseDTO {
@@ -74,5 +77,44 @@ public class ExpenseResponseDTO {
         Integer weekExpenditure;
         Integer dayTargetExpenditure;
         List<ExpensePerDayDTO> expenses;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WeeklyAverageExpenditureViewDTO {
+        AgeGroup age;
+        Job job;
+        Integer topPercent;
+        Integer averageExpenditure;
+        Integer myAverageExpenditure;
+        Integer lastWeekExpenditure;
+        Integer thisWeekExpenditure;
+        String highestExpenditureCategoryName; // 지출액이 가장 큰 카테고리 이름
+        List<CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO> categories;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MonthExpenseDTO {
+        Integer year;
+        Integer month;
+        LocalDate expenseDate;
+        Integer expenditure;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MonthlyExpenditureViewDTO {
+        Integer dayTargetExpenditure;
+        List<MonthExpenseDTO> selectedMonthExpenses; // 요청 받은 Month
+        List<MonthExpenseDTO> previousMonthExpenses; // 요청 받은 Month - 1
+        Integer achieveDays;
+        Integer rewards;
     }
 }
