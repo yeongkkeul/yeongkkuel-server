@@ -11,6 +11,7 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JpaItemWriter;
@@ -51,7 +52,7 @@ public class UserScoreBatchConfig {
     @Bean
     public Step updateUserScoreStep() {
         return new StepBuilder("updateUserScoreStep", jobRepository)
-                .<User, ChatRoomMembership>chunk(10, transactionManager)
+                .<User, List<ChatRoomMembership>>chunk(10, transactionManager)
                 .reader(userReader())
                 .processor(userScoreProcessor())
                 .writer(userScoreWriter())
@@ -69,7 +70,7 @@ public class UserScoreBatchConfig {
     }
 
     @Bean
-    public ItemProcessor<User, ChatRoomMembership> userScoreProcessor() {
+    public ItemProcessor<User, List<ChatRoomMembership>> userScoreProcessor() {
         return user -> {
             EntityManager entityManager = entityManagerFactory.createEntityManager();
             try {
@@ -110,7 +111,7 @@ public class UserScoreBatchConfig {
                     membership.setUserScore(score);
                 }
 
-                return memberships.isEmpty() ? null : memberships.get(0);
+                return memberships.isEmpty() ? null : memberships;
             } finally {
                 entityManager.close();
             }
@@ -119,9 +120,16 @@ public class UserScoreBatchConfig {
 
     @Bean
     @Transactional
-    public ItemWriter<ChatRoomMembership> userScoreWriter() {
+    public ItemWriter<List<ChatRoomMembership>> userScoreWriter() {
         JpaItemWriter<ChatRoomMembership> jpaItemWriter = new JpaItemWriter<>();
         jpaItemWriter.setEntityManagerFactory(entityManagerFactory);
-        return jpaItemWriter::write;
+
+        return items -> {
+            List<ChatRoomMembership> flatList = new ArrayList<>();
+            for (List<ChatRoomMembership> memberships : items) {
+                flatList.addAll(memberships);
+            }
+            jpaItemWriter.write(new Chunk<>(flatList));
+        };
     }
 }
