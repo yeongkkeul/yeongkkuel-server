@@ -41,8 +41,8 @@ public class AmazonS3Manager{
         return amazonS3.getUrl(amazonConfig.getBucket(), keyName).toString();
     }
 
-    public String generateUserProfileKeyName(Uuid uuid) {
-        return amazonConfig.getUserProfilePath() + '/' + uuid.getUuid();
+    public String generateUserProfileKeyName(Long userId) {
+        return amazonConfig.getUserProfilePath() + '/' + userId;
     }
 
     public String generateChatroomProfileKeyName(Uuid uuid) {

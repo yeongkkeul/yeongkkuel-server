@@ -1,7 +1,5 @@
 package com.umc.yeongkkeul.web.dto;
 
-import lombok.Getter;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,6 +14,7 @@ public record NotificationDetailsResponseDto(
             String notificationContent,
             String targetUrl,
             Boolean isRead,
+            String timestamp,
             LocalDateTime createdAt
     ) {
     }

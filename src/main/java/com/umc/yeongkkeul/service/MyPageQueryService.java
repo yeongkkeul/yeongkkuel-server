@@ -17,9 +17,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -44,8 +47,10 @@ public class MyPageQueryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
-        double weeklyAchievementRate = caculateWeeklyAchievementRate(user); // weeklyAchievementRate 계산
-
+        Double weeklyAchievementRate = null;
+        if (user.getDayTargetExpenditure() != null) {
+            weeklyAchievementRate = caculateWeeklyAchievementRate(user); // weeklyAchievementRate 계산
+        }
         return MyPageInfoResponseDto.of(user, weeklyAchievementRate);
     }
 
@@ -86,14 +91,11 @@ public class MyPageQueryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
 
+        LocalDateTime startDay = LocalDateTime.now().minusDays(7); // 7일 전 날짜
+        List<Reward> rewards = rewardRepository.findByUserAndCreatedAtAfterOrderByCreatedAtDesc(user, startDay); // 일주일 내 데이터만 최신순으로 가져오기
 
-        List<Reward> rewards = rewardRepository.findByUser(user);
-        List<RewardResponseDto> rewardList = new ArrayList<>();
-        for (Reward reward : rewards) {
-            RewardResponseDto dto = RewardResponseDto.from(reward);
-            rewardList.add(dto);
-        }
-
-        return rewardList;
+        return rewards.stream()
+                .map(RewardResponseDto::from)
+                .collect(Collectors.toList());
     }
 }

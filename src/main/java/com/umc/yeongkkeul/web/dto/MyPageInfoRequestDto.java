@@ -12,5 +12,4 @@ public class MyPageInfoRequestDto {
     private String gender;
     private AgeGroup ageGroup;
     private Job job;
-    private String profileImageUrl;
 }

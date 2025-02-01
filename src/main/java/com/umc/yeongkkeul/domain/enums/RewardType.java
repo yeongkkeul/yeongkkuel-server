@@ -1,6 +1,6 @@
 package com.umc.yeongkkeul.domain.enums;
 
-public enum ReasonCode {
+public enum RewardType {
     INDIVIDUAL,
     TEAM;
 }
