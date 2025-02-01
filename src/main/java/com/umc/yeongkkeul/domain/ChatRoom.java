@@ -65,6 +65,10 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "image_url")
     private String imageUrl;
 
+    // 채팅방 점수 (랭킹용)
+    @Column(name = "total_score")
+    private Double totalScore;
+
     @OneToMany(mappedBy = "chatroom", cascade = CascadeType.ALL)
     private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
 
@@ -73,4 +77,8 @@ public class ChatRoom extends BaseEntity {
     private List<Message> messageList = new ArrayList<>();
 
      */
+
+    public void setTotalScore(Double totalScore) {
+        this.totalScore = totalScore;
+    }
 }
