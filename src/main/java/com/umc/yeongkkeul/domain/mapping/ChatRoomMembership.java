@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -50,4 +51,7 @@ public class ChatRoomMembership extends BaseEntity {
     // 추방 날짜
     @Column(name = "banned_at")
     private LocalDateTime bannedAt;
+
+    @Column
+    private Long userScore;
 }
