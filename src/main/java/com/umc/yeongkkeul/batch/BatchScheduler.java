@@ -16,7 +16,7 @@ public class BatchScheduler {
     private final JobLauncher jobLauncher;
     private final Job updateUserScoreJob;
 
-    @Scheduled(cron ="0 0 * * * ?")
+    @Scheduled(cron = "0 * * * * ?")
     public void runBatchJobs() throws Exception{
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("timestamp",System.currentTimeMillis())

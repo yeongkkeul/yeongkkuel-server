@@ -53,5 +53,5 @@ public class ChatRoomMembership extends BaseEntity {
     private LocalDateTime bannedAt;
 
     @Column
-    private Long userScore;
+    private Double userScore;
 }

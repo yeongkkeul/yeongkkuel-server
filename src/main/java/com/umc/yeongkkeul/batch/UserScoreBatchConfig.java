@@ -19,6 +19,7 @@ import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -75,8 +76,8 @@ public class UserScoreBatchConfig {
 
                 int totalCategories = user.getCategoryList().size();
                 Integer dayTargetExpenditure = user.getDayTargetExpenditure();
-                int totalExpenditure = entityManager.createQuery(
-                                "SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.user.id = :userId AND e.day = :yesterday", Integer.class)
+                long totalExpenditure = entityManager.createQuery(
+                                "SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.user.id = :userId AND e.day = :yesterday", Long.class)
                         .setParameter("userId", user.getId())
                         .setParameter("yesterday", LocalDate.now().minusDays(1))
                         .getSingleResult();
@@ -106,7 +107,7 @@ public class UserScoreBatchConfig {
 
                 List<ChatRoomMembership> memberships = user.getChatRoomMembershipList();
                 for (ChatRoomMembership membership : memberships) {
-                    membership.setUserScore((long) score);
+                    membership.setUserScore(score);
                 }
 
                 return memberships.isEmpty() ? null : memberships.get(0);
@@ -117,6 +118,7 @@ public class UserScoreBatchConfig {
     }
 
     @Bean
+    @Transactional
     public ItemWriter<ChatRoomMembership> userScoreWriter() {
         JpaItemWriter<ChatRoomMembership> jpaItemWriter = new JpaItemWriter<>();
         jpaItemWriter.setEntityManagerFactory(entityManagerFactory);
