@@ -113,50 +113,5 @@ public class ChatController {
         chatService.saveMessages(exitMessageDto);
     }
 
-    /**
-     * 채팅방에 업로드된 이미지 목록 조회 API
-     * messageType이 "IMAGE"인 메시지의 S3 key를 활용해 이미지 URL을 생성합니다.
-     */
-    @GetMapping("/{chatRoomId}/images")
-    @Operation(summary = "채팅방 이미지 조회", description = "채팅방에 업로드된 이미지 목록(이미지 URL)을 조회합니다.")
-    public ApiResponse<List<String>> getChatRoomImages(@PathVariable Long chatRoomId) {
-        List<String> imageUrls = chatService.getChatRoomImageUrls(chatRoomId);
-        return ApiResponse.onSuccess(imageUrls);
-    }
 
-    /**
-     * 채팅방 이미지 다운로드 API
-     * 특정 이미지 메시지(messageId)에 대해, S3에서 파일 데이터를 다운로드한 후 원본 콘텐츠 타입에 맞게 응답 헤더를 설정합니다.
-     */
-    @GetMapping("/{chatRoomId}/images/{messageId}/download")
-    @Operation(summary = "채팅방 이미지 다운로드", description = "채팅방에 업로드된 이미지를 다운로드합니다.")
-    public ResponseEntity<byte[]> downloadChatImage(@PathVariable Long chatRoomId, @PathVariable Long messageId) {
-        AmazonS3Manager.S3DownloadResponse downloadResponse = chatService.downloadChatImage(chatRoomId, messageId);
-
-        HttpHeaders headers = new HttpHeaders();
-        // S3에 저장된 원본 콘텐츠 타입을 사용합니다.
-        headers.setContentType(MediaType.parseMediaType(downloadResponse.getContentType()));
-        headers.setContentLength(downloadResponse.getData().length);
-        headers.setContentDisposition(ContentDisposition.builder("attachment")
-                .filename("message_" + messageId)
-                .build());
-
-        return new ResponseEntity<>(downloadResponse.getData(), headers, HttpStatus.OK);
-    }
-
-    /**
-     * 채팅 이미지 업로드 API
-     * 클라이언트는 이미지를 업로드한 후, 반환된 이미지 URL을 포함하여 채팅 메시지를 전송할 수 있습니다.
-     *
-     * @param chatRoomId 채팅방 ID
-     * @param file 업로드할 이미지 파일 (Multipart 형식)
-     * @return S3에 저장된 이미지 URL
-     */
-    @PostMapping("/{chatRoomId}/images")
-    @Operation(summary = "채팅 이미지 업로드", description = "채팅 이미지를 S3에 업로드하고 이미지 URL을 반환합니다.")
-    public ApiResponse<String> uploadChatImage(@PathVariable Long chatRoomId,
-                                               @RequestParam("file") MultipartFile file) {
-        String imageUrl = chatService.uploadChatImage(chatRoomId, file);
-        return ApiResponse.onSuccess(imageUrl);
-    }
 }
