@@ -4,6 +4,7 @@ import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
+import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
@@ -29,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * ChatService 클래스
@@ -48,6 +51,7 @@ public class ChatService {
 
     private final RabbitTemplate rabbitTemplate; // RabbitMQ를 통해 메시지를 전송하는 템플릿
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
+    private final AmazonS3Manager amazonS3Manager;
 
     private final String READ_STATUS_KEY_PREFIX = "read:message:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
@@ -273,5 +277,32 @@ public class ChatService {
         if (seconds < 691200) return  "일주일 전 활동";
 
         return null;
+    }
+
+    /**
+     * 이미지 메시지 URL 리스트를 반환
+     * messageType이 "IMAGE"인 경우, content에 저장된 S3 key를 이용해 URL을 생성
+     */
+    public List<String> getChatRoomImageUrls(Long chatRoomId) {
+        List<MessageDto> messages = getMessages(chatRoomId);
+        return messages.stream()
+                .filter(m -> "IMAGE".equalsIgnoreCase(m.messageType()))
+                .map(m -> amazonS3Manager.getFileUrl(m.content()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 채팅방 내의 특정 이미지 메시지에 해당하는 파일을 S3에서 다운로드
+     * S3DownloadResponse에는 파일 데이터와 원본 콘텐츠 타입이 포함
+     */
+    public AmazonS3Manager.S3DownloadResponse downloadChatImage(Long chatRoomId, Long messageId) {
+        Optional<MessageDto> optionalImageMessage = getMessages(chatRoomId).stream()
+                .filter(m -> m.id().equals(messageId) && "IMAGE".equalsIgnoreCase(m.messageType()))
+                .findFirst();
+        if (optionalImageMessage.isEmpty()) {
+            throw new ChatRoomHandler(ErrorStatus._CHAT_IMAGE_NOT_FOUND);
+        }
+        MessageDto imageMessage = optionalImageMessage.get();
+        return amazonS3Manager.downloadFileWithMetadata(imageMessage.content());
     }
 }

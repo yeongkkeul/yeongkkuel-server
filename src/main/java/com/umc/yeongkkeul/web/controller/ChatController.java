@@ -3,6 +3,7 @@ package com.umc.yeongkkeul.web.controller;
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
+import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
@@ -116,23 +117,32 @@ public class ChatController {
 
     /**
      * 채팅방에 업로드된 이미지 목록 조회 API
-     * 채팅 메시지 중 messageType이 "IMAGE"인 경우, content에 저장된 S3 key를 통해 이미지 URL을 생성합니다.
+     * messageType이 "IMAGE"인 메시지의 S3 key를 활용해 이미지 URL을 생성합니다.
      */
     @GetMapping("/{chatRoomId}/images")
     @Operation(summary = "채팅방 이미지 조회", description = "채팅방에 업로드된 이미지 목록(이미지 URL)을 조회합니다.")
     public ApiResponse<List<String>> getChatRoomImages(@PathVariable Long chatRoomId) {
-
-        return ApiResponse.onSuccess(null);
+        List<String> imageUrls = chatService.getChatRoomImageUrls(chatRoomId);
+        return ApiResponse.onSuccess(imageUrls);
     }
 
     /**
      * 채팅방 이미지 다운로드 API
-     * 특정 채팅 메시지(messageId)가 이미지임을 확인한 후, S3에서 해당 파일을 읽어 byte[]로 반환합니다.
+     * 특정 이미지 메시지(messageId)에 대해, S3에서 파일 데이터를 다운로드한 후 원본 콘텐츠 타입에 맞게 응답 헤더를 설정합니다.
      */
     @GetMapping("/{chatRoomId}/images/{messageId}/download")
     @Operation(summary = "채팅방 이미지 다운로드", description = "채팅방에 업로드된 이미지를 다운로드합니다.")
     public ResponseEntity<byte[]> downloadChatImage(@PathVariable Long chatRoomId, @PathVariable Long messageId) {
+        AmazonS3Manager.S3DownloadResponse downloadResponse = chatService.downloadChatImage(chatRoomId, messageId);
 
-        return null;
+        HttpHeaders headers = new HttpHeaders();
+        // S3에 저장된 원본 콘텐츠 타입을 사용합니다.
+        headers.setContentType(MediaType.parseMediaType(downloadResponse.getContentType()));
+        headers.setContentLength(downloadResponse.getData().length);
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename("message_" + messageId)
+                .build());
+
+        return new ResponseEntity<>(downloadResponse.getData(), headers, HttpStatus.OK);
     }
 }

@@ -41,12 +41,17 @@ public class AmazonS3Manager{
         return amazonS3.getUrl(amazonConfig.getBucket(), keyName).toString();
     }
 
-    // 다운로드 기능 추가: S3의 파일을 byte[]로 반환합니다.
-    public byte[] downloadFile(String keyName) {
+    /**
+     * S3에서 파일을 다운로드하며, 파일 데이터와 함께 원본의 contentType를 반환합니다.
+     */
+    public S3DownloadResponse downloadFileWithMetadata(String keyName) {
         try {
             S3Object s3Object = amazonS3.getObject(amazonConfig.getBucket(), keyName);
             S3ObjectInputStream inputStream = s3Object.getObjectContent();
-            return IOUtils.toByteArray(inputStream);
+            byte[] data = IOUtils.toByteArray(inputStream);
+            // S3 객체의 메타데이터에서 콘텐츠 타입을 가져옵니다.
+            String contentType = s3Object.getObjectMetadata().getContentType();
+            return new S3DownloadResponse(data, contentType);
         } catch (IOException e) {
             log.error("Error downloading file from S3 with key {}: {}", keyName, e.getMessage());
             throw new RuntimeException("Failed to download file from S3", e);
@@ -71,5 +76,26 @@ public class AmazonS3Manager{
 
     public String generateChatKeyName(Uuid uuid) {
         return amazonConfig.getChatPath() + '/' + uuid.getUuid();
+    }
+
+    /**
+     * S3 다운로드 결과를 담는 DTO. -> 추후 다운로드 api에서 메타데이터 넣는 활용 필요해서 추가함
+     */
+    public static class S3DownloadResponse {
+        private final byte[] data;
+        private final String contentType;
+
+        public S3DownloadResponse(byte[] data, String contentType) {
+            this.data = data;
+            this.contentType = contentType;
+        }
+
+        public byte[] getData() {
+            return data;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
     }
 }
