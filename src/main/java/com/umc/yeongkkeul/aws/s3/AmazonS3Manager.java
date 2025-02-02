@@ -27,6 +27,7 @@ public class AmazonS3Manager{
 
     public String uploadFile(String keyName, MultipartFile file){
         ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(file.getContentType()); // MIME 타입 설정
         metadata.setContentLength(file.getSize());
         try {
             amazonS3.putObject(new PutObjectRequest(amazonConfig.getBucket(), keyName, file.getInputStream(), metadata));
