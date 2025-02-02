@@ -14,10 +14,8 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.http.*;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -144,5 +142,21 @@ public class ChatController {
                 .build());
 
         return new ResponseEntity<>(downloadResponse.getData(), headers, HttpStatus.OK);
+    }
+
+    /**
+     * 채팅 이미지 업로드 API
+     * 클라이언트는 이미지를 업로드한 후, 반환된 이미지 URL을 포함하여 채팅 메시지를 전송할 수 있습니다.
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param file 업로드할 이미지 파일 (Multipart 형식)
+     * @return S3에 저장된 이미지 URL
+     */
+    @PostMapping("/{chatRoomId}/images")
+    @Operation(summary = "채팅 이미지 업로드", description = "채팅 이미지를 S3에 업로드하고 이미지 URL을 반환합니다.")
+    public ApiResponse<String> uploadChatImage(@PathVariable Long chatRoomId,
+                                               @RequestParam("file") MultipartFile file) {
+        String imageUrl = chatService.uploadChatImage(chatRoomId, file);
+        return ApiResponse.onSuccess(imageUrl);
     }
 }
