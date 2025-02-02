@@ -3,6 +3,9 @@ package com.umc.yeongkkeul.aws.s3;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.util.IOUtils;
 import com.umc.yeongkkeul.config.AmazonConfig;
 import com.umc.yeongkkeul.domain.common.Uuid;
 import com.umc.yeongkkeul.repository.UuidRepository;
@@ -36,6 +39,18 @@ public class AmazonS3Manager{
         }
 
         return amazonS3.getUrl(amazonConfig.getBucket(), keyName).toString();
+    }
+
+    // 다운로드 기능 추가: S3의 파일을 byte[]로 반환합니다.
+    public byte[] downloadFile(String keyName) {
+        try {
+            S3Object s3Object = amazonS3.getObject(amazonConfig.getBucket(), keyName);
+            S3ObjectInputStream inputStream = s3Object.getObjectContent();
+            return IOUtils.toByteArray(inputStream);
+        } catch (IOException e) {
+            log.error("Error downloading file from S3 with key {}: {}", keyName, e.getMessage());
+            throw new RuntimeException("Failed to download file from S3", e);
+        }
     }
 
     public String getFileUrl(String keyName) {

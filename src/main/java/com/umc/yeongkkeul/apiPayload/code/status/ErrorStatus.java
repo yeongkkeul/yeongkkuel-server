@@ -58,7 +58,10 @@ public enum ErrorStatus implements BaseErrorCode {
     _NOT_ENOUGH_REWARD(HttpStatus.BAD_REQUEST,"REWARD4001","보유 리워드 부족합니다."),
 
     //Item
-    _ITEM_NOT_FOUND(HttpStatus.NOT_FOUND,"ITEM4001", "현재 스킨이 존재하지 않습니다.");
+    _ITEM_NOT_FOUND(HttpStatus.NOT_FOUND,"ITEM4001", "현재 스킨이 존재하지 않습니다."),
+
+    // Chat 서랍
+    _CHAT_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CHATIMAGE4001", "채팅방 이미지를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
