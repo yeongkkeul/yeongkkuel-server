@@ -20,6 +20,7 @@ public record PublicChatRoomsDetailResponseDto(
         String chatRoomAgeRange,
         String chatRoomJob,
         Integer chatRoomMaxUserCount,
+        Integer chatRoomParticipationCount,
         String chatRoomThumbnail,
         String chatRoomDDay,
         Integer chatRoomSpendingAmount,
@@ -38,6 +39,7 @@ public record PublicChatRoomsDetailResponseDto(
                     .chatRoomAgeRange(String.valueOf(chatRoom.getAgeGroupFilter()))
                     .chatRoomJob(String.valueOf(chatRoom.getJobFilter()))
                     .chatRoomMaxUserCount(chatRoom.getMaxParticipants())
+                    .chatRoomParticipationCount(chatRoom.getParticipationCount())
                     .chatRoomThumbnail(chatRoom.getImageUrl())
                     .chatRoomSpendingAmount(chatRoom.getDailySpendingGoalFilter())
                     .chatRoomDDay(ddayStr)
