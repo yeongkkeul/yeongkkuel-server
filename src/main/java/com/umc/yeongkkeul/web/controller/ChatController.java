@@ -1,17 +1,24 @@
 package com.umc.yeongkkeul.web.controller;
 
+import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
+import org.springframework.http.*;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * ChatController 클래스
@@ -105,5 +112,27 @@ public class ChatController {
         chatService.exitMessage(exitMessageDto);
         log.info("The user with senderID has left the chat room.");
         chatService.saveMessages(exitMessageDto);
+    }
+
+    /**
+     * 채팅방에 업로드된 이미지 목록 조회 API
+     * 채팅 메시지 중 messageType이 "IMAGE"인 경우, content에 저장된 S3 key를 통해 이미지 URL을 생성합니다.
+     */
+    @GetMapping("/{chatRoomId}/images")
+    @Operation(summary = "채팅방 이미지 조회", description = "채팅방에 업로드된 이미지 목록(이미지 URL)을 조회합니다.")
+    public ApiResponse<List<String>> getChatRoomImages(@PathVariable Long chatRoomId) {
+
+        return ApiResponse.onSuccess(null);
+    }
+
+    /**
+     * 채팅방 이미지 다운로드 API
+     * 특정 채팅 메시지(messageId)가 이미지임을 확인한 후, S3에서 해당 파일을 읽어 byte[]로 반환합니다.
+     */
+    @GetMapping("/{chatRoomId}/images/{messageId}/download")
+    @Operation(summary = "채팅방 이미지 다운로드", description = "채팅방에 업로드된 이미지를 다운로드합니다.")
+    public ResponseEntity<byte[]> downloadChatImage(@PathVariable Long chatRoomId, @PathVariable Long messageId) {
+
+        return null;
     }
 }
