@@ -4,15 +4,14 @@ import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
+import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
+import com.umc.yeongkkeul.domain.common.Uuid;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
-import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
-import com.umc.yeongkkeul.repository.ChatRoomRepository;
-import com.umc.yeongkkeul.repository.ExpenseRepository;
-import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.repository.*;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
@@ -25,10 +24,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * ChatService 클래스
@@ -45,9 +48,11 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
     private final ExpenseRepository expenseRepository;
+    private final UuidRepository uuidRepository;
 
     private final RabbitTemplate rabbitTemplate; // RabbitMQ를 통해 메시지를 전송하는 템플릿
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
+    private final AmazonS3Manager amazonS3Manager;
 
     private final String READ_STATUS_KEY_PREFIX = "read:message:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
@@ -273,5 +278,54 @@ public class ChatService {
         if (seconds < 691200) return  "일주일 전 활동";
 
         return null;
+    }
+
+    /**
+     * 이미지 메시지 URL 리스트를 반환
+     * messageType이 "IMAGE"인 경우, content에 저장된 S3 key를 이용해 URL을 생성
+     */
+    public List<String> getChatRoomImageUrls(Long chatRoomId) {
+        List<MessageDto> messages = getMessages(chatRoomId);
+        return messages.stream()
+                .filter(m -> "IMAGE".equalsIgnoreCase(m.messageType()))
+                .map(m -> amazonS3Manager.getFileUrl(m.content()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 채팅방 내의 특정 이미지 메시지에 해당하는 파일을 S3에서 다운로드
+     * S3DownloadResponse에는 파일 데이터와 원본 콘텐츠 타입이 포함
+     */
+    public AmazonS3Manager.S3DownloadResponse downloadChatImage(Long chatRoomId, Long messageId) {
+        Optional<MessageDto> optionalImageMessage = getMessages(chatRoomId).stream()
+                .filter(m -> m.id().equals(messageId) && "IMAGE".equalsIgnoreCase(m.messageType()))
+                .findFirst();
+        if (optionalImageMessage.isEmpty()) {
+            throw new ChatRoomHandler(ErrorStatus._CHAT_IMAGE_NOT_FOUND);
+        }
+        MessageDto imageMessage = optionalImageMessage.get();
+        return amazonS3Manager.downloadFileWithMetadata(imageMessage.content());
+    }
+
+    /**
+     * 채팅 이미지 업로드 메서드
+     * 1. 새로운 Uuid 엔티티를 생성 및 저장
+     * 2. 저장한 Uuid를 기반으로 S3 key 생성
+     * 3. AmazonS3Manager를 통해 파일 업로드 후 S3에 저장된 URL 반환
+     *
+     * @param chatRoomId 채팅방 ID (필요에 따라 추가 검증 가능)
+     * @param file 업로드할 이미지 파일
+     * @return S3에 저장된 이미지 URL
+     */
+    @Transactional
+    public String uploadChatImage(Long chatRoomId, MultipartFile file) {
+        // 새로운 Uuid 엔티티 생성 (랜덤 UUID 문자열 생성)
+        Uuid uuidEntity = Uuid.builder().uuid(UUID.randomUUID().toString()).build();
+        // DB에 저장 (중복 방지)
+        uuidRepository.save(uuidEntity);
+        // Uuid 엔티티를 이용해 S3 key 생성
+        String keyName = amazonS3Manager.generateChatKeyName(uuidEntity);
+        // S3에 파일 업로드 및 URL 반환
+        return amazonS3Manager.uploadFile(keyName, file);
     }
 }
