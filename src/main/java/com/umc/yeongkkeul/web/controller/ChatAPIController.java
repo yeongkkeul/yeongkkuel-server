@@ -5,6 +5,8 @@ import com.umc.yeongkkeul.web.dto.chat.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -110,6 +112,7 @@ public class ChatAPIController {
     }
 
     // FIXME: ENUM 상수 값을 적적한 한글로 변환하는 로직이 필요.
+    // TODO: 정렬 기준 생각해보자
     /**
      * null 값이면 필터링에 포함하지 않습니다.
      *
@@ -120,7 +123,7 @@ public class ChatAPIController {
      * @param page 페이지 (기본값 0)
      * @return 필터링에 맞는 모든 그룹 채팅방을 조회합니다.
      */
-    @Operation(summary = "채팅방 둘러보기", description = "필터에 맞는 채팅방을 페이징 단위로 조회합니다.")
+    @Operation(summary = "채팅방 둘러보기", description = "필터에 맞는 모든 채팅방을 페이징 단위로 조회합니다.")
     @GetMapping("/expore")
     public ResponseEntity<PublicChatRoomsDetailResponseDto> getPublicChatRooms(
             @RequestParam(required = false) String age,
@@ -130,5 +133,14 @@ public class ChatAPIController {
             @RequestParam(defaultValue = "0") int page) {
 
         return ResponseEntity.ok().body(chatService.getPublicChatRooms(page, age, minAmount, maxAmount, job));
+    }
+
+    @Operation(summary = "채팅방 둘러보기 - 검색", description = "키워드에 맞는 모든 채팅방을 페이징 단위로 조회합니다.")
+    @GetMapping("/search")
+    public ResponseEntity<PublicChatRoomsDetailResponseDto> searchPublicChatRooms(
+            @RequestParam(required = true) @NotNull @Size(min = 2) String keyword,
+            @RequestParam(defaultValue = "0") int page) {
+
+        return ResponseEntity.ok().body(chatService.searchPublicChatRooms(keyword, page));
     }
 }

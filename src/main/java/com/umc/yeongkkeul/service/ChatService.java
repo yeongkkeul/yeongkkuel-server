@@ -283,6 +283,20 @@ public class ChatService {
         Page<ChatRoom> chatRoomPage = chatRoomRepository.findAllWithPagination(ageEnum, minAmount, maxAmount, jobEnum, pageable);
         List<ChatRoom> chatRoomList = chatRoomPage.getContent();
 
+        // TODO: 정렬 기준 추가
+        return PublicChatRoomsDetailResponseDto.builder()
+                .publicChatRoomDetailDtos(chatRoomList.stream()
+                        .map(chatRoom -> PublicChatRoomsDetailResponseDto.PublicChatRoomDetailDto.of(chatRoom))
+                        .toList())
+                .build();
+    }
+
+    public PublicChatRoomsDetailResponseDto searchPublicChatRooms(String keyword, int page) {
+
+        Pageable pageable = PageRequest.of(page, CHATROOM_PAGING_SIZE);
+        Page<ChatRoom> chatRoomPage = chatRoomRepository.findByTitleContainingOrderByParticipationCountDesc(keyword, pageable);
+        List<ChatRoom> chatRoomList = chatRoomPage.getContent();
+
         return PublicChatRoomsDetailResponseDto.builder()
                 .publicChatRoomDetailDtos(chatRoomList.stream()
                         .map(chatRoom -> PublicChatRoomsDetailResponseDto.PublicChatRoomDetailDto.of(chatRoom))

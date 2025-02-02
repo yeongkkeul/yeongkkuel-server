@@ -21,4 +21,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
                                          @Param("maxAmount") Integer maxAmount,
                                          @Param("job") Job job,
                                          Pageable pageable);
+
+    Page<ChatRoom> findByTitleContainingOrderByParticipationCountDesc(String title, Pageable pageable);
 }
