@@ -2,6 +2,7 @@ package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
+import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomMembershipHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
@@ -25,14 +26,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * ChatService 클래스
@@ -216,6 +215,38 @@ public class ChatService {
         // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
         try {
             enterMessage(messageDto);
+        } catch (AmqpException e) {
+            throw new AmqpException("메시지 전송 실패", e); // 예외를 던져서 트랜잭션 롤백 유도
+        }
+    }
+
+    @Transactional
+    public void exitChatRoom(Long userId, Long chatRoomId, MessageDto messageDto) {
+
+        // 탈퇴 희망 사용자
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        // 탈퇴할 그룹 채팅방
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 해당 유저가 방장인지 확인
+        ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
+                        .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 방장이라면 해당 채팅방을 삭제
+        if (chatRoomMembership.getIsHost()) {
+
+            chatRoomMembershipRepository.deleteChatRoomMemberships(chatRoom.getId()); // 모든 연관 엔티티 삭제
+            chatRoomRepository.delete(chatRoom);
+
+            // TODO: 클라이언트에게 특정 타입의 메시지를 보내고 이 타입을 받으면 해당 채팅방의 구독을 취소
+        }
+
+        // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
+        try {
+            exitMessage(messageDto);
         } catch (AmqpException e) {
             throw new AmqpException("메시지 전송 실패", e); // 예외를 던져서 트랜잭션 롤백 유도
         }

@@ -64,13 +64,4 @@ public class ChatRoom extends BaseEntity {
     // 프로필 이미지
     @Column(name = "image_url")
     private String imageUrl;
-
-    @OneToMany(mappedBy = "chatroom", cascade = CascadeType.ALL)
-    private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
-
-    /*
-    @OneToMany(mappedBy = "chatroom", cascade = CascadeType.ALL)
-    private List<Message> messageList = new ArrayList<>();
-
-     */
 }

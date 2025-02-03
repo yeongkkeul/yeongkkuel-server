@@ -102,7 +102,14 @@ public class ChatController {
                 .timestamp(messageDto.timestamp())
                 .build();
 
-        chatService.exitMessage(exitMessageDto);
+        try {
+            chatService.exitChatRoom(messageDto.senderId(), roomId, messageDto);
+        } catch (AmqpException e) {
+            log.error("The message was not sent by AmqpException {}.", e); return;
+        } catch (Exception e) {
+            log.error("error {}.", e); return;
+        }
+
         log.info("The user with senderID has left the chat room.");
         chatService.saveMessages(exitMessageDto);
     }
