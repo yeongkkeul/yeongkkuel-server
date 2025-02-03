@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -128,13 +129,25 @@ public class StoreService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus._USER_NOT_FOUND));
 
-        wearingItemInfo.getUserItem().forEach(purchaseItem -> {
-            Purchase purchase = purchaseRepository.findByIdAndUser(purchaseItem.getPurchaseId(), user)
-                    .orElseThrow(() -> new GeneralException(ErrorStatus._PURCHASE_NOT_FOUND));
-            purchase.setIsUsed(true);
-            purchaseRepository.save(purchase);
+        // 해당 유저의 모든 구매 아이템 가져오기
+        List<Purchase> allPurchases = purchaseRepository.findByUser(user);
+
+        // 착용할 아이템의 purchaseId 리스트 추출
+        Set<Long> wearingItemIds = wearingItemInfo.getUserItem().stream()
+                .map(PurchaseRequestDto.PurchaseItem::getPurchaseId)
+                .collect(Collectors.toSet());
+
+        // 모든 아이템의 isUsed를 false로 설정하고, 착용할 아이템만 true로 변경
+        allPurchases.forEach(purchase -> {
+            if (wearingItemIds.contains(purchase.getId())) {
+                purchase.setIsUsed(true);  // 착용한 아이템이면 true
+            } else {
+                purchase.setIsUsed(false); // 나머지는 false
+            }
         });
 
+        // 변경 사항을 한 번에 저장
+        purchaseRepository.saveAll(allPurchases);
 
     }
 

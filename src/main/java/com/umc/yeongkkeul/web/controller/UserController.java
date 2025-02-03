@@ -69,6 +69,16 @@ public class UserController {
         return ApiResponse.onSuccess(googleInfoDTO);
     }
 
+    @PostMapping("/auth/logout")
+    @Operation(summary = "로그아웃", description = "전체 로그아웃 kakao(AccessToken),google(id_token")
+    public ApiResponse<String> logout(@RequestParam String token){
+        String email = FindLoginUser.getCurrentUserId();
+
+        userService.logout(token,email);
+
+        return ApiResponse.onSuccess("로그아웃 성공");
+    }
+
 
 
     //사용자 정보기입
