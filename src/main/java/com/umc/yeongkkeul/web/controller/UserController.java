@@ -37,8 +37,8 @@ public class UserController {
     //카카오
     @GetMapping("/auth/kakao-login/")
     @Operation(summary = "카카오 로그인", description = "카카오 로그인 GET")
-    public ApiResponse<SocialInfoResponseDto.KakaoInfoDTO> kakakoLogin(@RequestParam String code){
-        String accessToken = kakaoLoginService.getKakaoAccessToken(code);
+    public ApiResponse<SocialInfoResponseDto.KakaoInfoDTO> kakakoLogin(@RequestParam String accessToken){
+        //String accessToken = kakaoLoginService.getKakaoAccessToken(code);
 
         HashMap<String, Object> userInfo = kakaoLoginService.getUserInfo(accessToken);
 
@@ -67,6 +67,16 @@ public class UserController {
         SocialInfoResponseDto.GoogleInfoDTO googleInfoDTO = googleLoginService.socialLoginGoogle(idToken);
 
         return ApiResponse.onSuccess(googleInfoDTO);
+    }
+
+    @PostMapping("/auth/logout")
+    @Operation(summary = "로그아웃", description = "전체 로그아웃 kakao(AccessToken),google(id_token")
+    public ApiResponse<String> logout(@RequestParam String token){
+        String email = FindLoginUser.getCurrentUserId();
+
+        userService.logout(token,email);
+
+        return ApiResponse.onSuccess("로그아웃 성공");
     }
 
 

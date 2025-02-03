@@ -1,5 +1,7 @@
 package com.umc.yeongkkeul.web.controller;
 
+import com.umc.yeongkkeul.apiPayload.ApiResponse;
+import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.chat.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,9 +11,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -42,13 +45,13 @@ public class ChatAPIController {
     // TODO: 로컬 DB에 저장한다고 해도 채팅방 상태가 바뀔 수도 있기 때문에 이를 지속적으로 추적하거나 요청해도 변경점을 찾아야 하는 로직이 필요하다.
     @GetMapping("/{chatRoomId}")
     @Operation(summary = "특정 채팅방 메시지 조회", description = "특정 채팅방의 모든 메시지를 조회합니다.")
-    public ResponseEntity<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
+    public ApiResponse<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
 
         Long userId = toId(getCurrentUserId());
 
         List<MessageDto> messageDtos = chatService.getMessages(chatRoomId);
 
-        return ResponseEntity.ok().body(messageDtos);
+        return ApiResponse.onSuccess(messageDtos);
     }
 
     /**
@@ -57,11 +60,11 @@ public class ChatAPIController {
      */
     @PostMapping
     @Operation(summary = "채팅방 생성", description = "그룹 채팅방을 생성합니다.")
-    public ResponseEntity<Long> createChatRoom(@RequestBody @Valid ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
+    public ApiResponse<Long> createChatRoom(@RequestBody @Valid ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
 
         Long userId = toId(getCurrentUserId());
 
-        return ResponseEntity.ok().body(chatService.createChatRoom(userId, chatRoomDetailRequestDto));
+        return ApiResponse.onSuccess(chatService.createChatRoom(userId, chatRoomDetailRequestDto));
     }
 
     // FIXME: 해당 API를 쓸지 생각해보자. STOMP로 보내줘도 됨.
@@ -78,11 +81,11 @@ public class ChatAPIController {
 
     @PostMapping("/{chatRoomId}/validate")
     @Operation(summary = "채팅방 패스워드 확인", description = "그룹 채팅방을 가입 할 때 사용하는 패스워드를 사용합니다. 채팅방 정보 조회의 isPassword를 통해 패스워드 여부를 확인")
-    public ResponseEntity<Boolean> validateChatRoomPassword(@PathVariable Long chatRoomId, @RequestBody ChatRoomJoinPasswordRequestDto chatRoomJoinPasswordRequestDto) {
+    public ApiResponse<Boolean> validateChatRoomPassword(@PathVariable Long chatRoomId, @RequestBody ChatRoomJoinPasswordRequestDto chatRoomJoinPasswordRequestDto) {
 
         Long userId = toId(getCurrentUserId());
 
-        return ResponseEntity.ok(chatService.validateChatRoomPassword(chatRoomId, chatRoomJoinPasswordRequestDto.password()));
+        return ApiResponse.onSuccess(chatService.validateChatRoomPassword(chatRoomId, chatRoomJoinPasswordRequestDto.password()));
     }
 
     /**
@@ -91,9 +94,9 @@ public class ChatAPIController {
      */
     @GetMapping("/{chatRoomId}/detail")
     @Operation(summary = "채팅방 정보 조회", description = "특정 채팅방의 정보를 조회합니다.")
-    public ResponseEntity<ChatRoomDetailResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
+    public ApiResponse<ChatRoomDetailResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
 
-        return ResponseEntity.ok().body(chatService.getChatRoomDetail(chatRoomId));
+        return ApiResponse.onSuccess(chatService.getChatRoomDetail(chatRoomId));
     }
 
     /**
@@ -106,9 +109,55 @@ public class ChatAPIController {
      */
     @GetMapping("/receipts/{expenseId}")
     @Operation(summary = "영수증 조회", description = "채팅방에 올라온 영수증의 정보를 조회합니다.")
-    public ResponseEntity<ReceiptMessageDto> getReceiptDetail(@PathVariable Long expenseId) {
+    public ApiResponse<ReceiptMessageDto> getReceiptDetail(@PathVariable Long expenseId) {
 
-        return ResponseEntity.ok().body(chatService.getReceipt(expenseId));
+        return ApiResponse.onSuccess(chatService.getReceipt(expenseId));
+    }
+    /**
+     * 채팅방에 업로드된 이미지 목록 조회 API
+     * messageType이 "IMAGE"인 메시지의 S3 key를 활용해 이미지 URL을 생성합니다.
+     */
+    @GetMapping("/{chatRoomId}/images")
+    @Operation(summary = "채팅방 이미지 조회", description = "채팅방에 업로드된 이미지 목록(이미지 URL)을 조회합니다.")
+    public ApiResponse<List<String>> getChatRoomImages(@PathVariable Long chatRoomId) {
+        List<String> imageUrls = chatService.getChatRoomImageUrls(chatRoomId);
+        return ApiResponse.onSuccess(imageUrls);
+    }
+
+    /**
+     * 채팅방 이미지 다운로드 API
+     * 특정 이미지 메시지(messageId)에 대해, S3에서 파일 데이터를 다운로드한 후 원본 콘텐츠 타입에 맞게 응답 헤더를 설정합니다.
+     */
+    @GetMapping("/{chatRoomId}/images/{messageId}/download")
+    @Operation(summary = "채팅방 이미지 다운로드", description = "채팅방에 업로드된 이미지를 다운로드합니다.")
+    public ResponseEntity<byte[]> downloadChatImage(@PathVariable Long chatRoomId, @PathVariable Long messageId) {
+        AmazonS3Manager.S3DownloadResponse downloadResponse = chatService.downloadChatImage(chatRoomId, messageId);
+
+        HttpHeaders headers = new HttpHeaders();
+        // S3에 저장된 원본 콘텐츠 타입을 사용합니다.
+        headers.setContentType(MediaType.parseMediaType(downloadResponse.getContentType()));
+        headers.setContentLength(downloadResponse.getData().length);
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename("message_" + messageId)
+                .build());
+
+        return new ResponseEntity<>(downloadResponse.getData(), headers, HttpStatus.OK);
+    }
+
+    /**
+     * 채팅 이미지 업로드 API
+     * 클라이언트는 이미지를 업로드한 후, 반환된 이미지 URL을 포함하여 채팅 메시지를 전송할 수 있습니다.
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param file 업로드할 이미지 파일 (Multipart 형식)
+     * @return S3에 저장된 이미지 URL
+     */
+    @PostMapping("/{chatRoomId}/images")
+    @Operation(summary = "채팅 이미지 업로드", description = "채팅 이미지를 S3에 업로드하고 이미지 URL을 반환합니다.")
+    public ApiResponse<String> uploadChatImage(@PathVariable Long chatRoomId,
+                                               @RequestParam("file") MultipartFile file) {
+        String imageUrl = chatService.uploadChatImage(chatRoomId, file);
+        return ApiResponse.onSuccess(imageUrl);
     }
 
     // FIXME: ENUM 상수 값을 적적한 한글로 변환하는 로직이 필요.

@@ -51,4 +51,8 @@ public class ChatRoomMembership extends BaseEntity {
     // 추방 날짜
     @Column(name = "banned_at")
     private LocalDateTime bannedAt;
+
+    // 개인 점수 (랭킹용)
+    @Column(name = "user_score")
+    private Double userScore;
 }

@@ -75,6 +75,11 @@ dependencies {
 
 	/* S3 */
 	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+
+	//Spring Batch
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
+	implementation 'org.springframework:spring-context-support'
+
 }
 
 tasks.named('test') {
