@@ -1,22 +1,19 @@
 package com.umc.yeongkkeul.web.controller;
 
-import com.umc.yeongkkeul.apiPayload.ApiResponse;
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
-import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
-import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
-import org.springframework.http.*;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -41,9 +38,19 @@ public class ChatController {
     @MessageMapping("chat.message.{roomId}")
     public void sendMessage(@DestinationVariable String roomId, @RequestBody MessageDto messageDto) {
 
-        chatService.sendMessage(messageDto); // 메시지 전송
+        MessageDto message = MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                .chatRoomId(messageDto.chatRoomId())
+                .senderId(messageDto.senderId())
+                .messageType(messageDto.messageType())
+                .content(messageDto.content())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+
+        chatService.sendMessage(message); // 메시지 전송
+
         log.info("Send a message to the group chat room with roomID");
-        chatService.saveMessages(messageDto); // 메시지 저장 TODO: 나중에 Consumer를 통해서 저장하자
+        chatService.saveMessages(message); // 메시지 저장 TODO: 나중에 Consumer를 통해서 저장하자
     }
 
     /**
@@ -65,12 +72,12 @@ public class ChatController {
 
         // 유저 입장을 알리는 메시지 생성
         MessageDto messageDto = MessageDto.builder()
-                .id(enterMessageDto.id()) // 메시지 ID
+                .id(TsidCreator.getTsid().toLong()) // 메시지 ID
                 .messageType(enterMessageDto.messageType()) // 메시지 타입
                 .content(enterMessageDto.senderId() + "님이 채팅방에 입장하였습니다.") // 입장 메시지 내용
                 .chatRoomId(enterMessageDto.chatRoomId()) // 채팅방 ID
                 .senderId(enterMessageDto.senderId()) // 발신자 ID
-                .timestamp(enterMessageDto.timestamp()) // 메시지 타임스탬프
+                .timestamp(LocalDateTime.now().toString()) // 메시지 타임스탬프
                 .build();
 
         // FIXME: Exception 예외 처리 추가 코드가 필요
@@ -100,12 +107,12 @@ public class ChatController {
 
         // 유저 퇴장을 알리는 메시지 생성
         MessageDto exitMessageDto = MessageDto.builder()
-                .id(messageDto.id())
+                .id(TsidCreator.getTsid().toLong())
                 .messageType(messageDto.messageType())
                 .content(messageDto.senderId() + "님이 채팅방에 퇴장하였습니다.")
                 .chatRoomId(messageDto.chatRoomId())
                 .senderId(messageDto.senderId())
-                .timestamp(messageDto.timestamp())
+                .timestamp(LocalDateTime.now().toString())
                 .build();
 
         try {

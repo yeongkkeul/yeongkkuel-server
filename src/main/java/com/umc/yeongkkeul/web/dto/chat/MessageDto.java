@@ -15,7 +15,7 @@ public record MessageDto(
         Long senderId, // 발신인 ID
         String messageType, // 메시지 타입(텍스트, 사진, 영수증)
         String content, // 메시지 내용
-        LocalDateTime timestamp // 타임스탬프
+        String timestamp // 타임스탬프
         // TODO: Message 전송 여부, 저장 여부를 저장하는 필드가 있으면 좋을듯
 ) {
 }

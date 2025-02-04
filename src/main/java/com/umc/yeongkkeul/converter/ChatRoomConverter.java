@@ -37,7 +37,7 @@ public class ChatRoomConverter {
      * @param chatRoom
      * @return 채팅방-사용자 테이블 저장을 위한 convert 메서드로 User와 ChatRoom 객체를 받아서 ChatRoomMembership Entity로 변환
      */
-    public static ChatRoomMembership toChatRoomMembershipEntity(User user, ChatRoom chatRoom, boolean isHost) {
+    public static ChatRoomMembership toChatRoomMembershipEntity(User user, ChatRoom chatRoom, boolean isHost, Long joinMessageId) {
 
         return ChatRoomMembership.builder()
                 .user(user)
@@ -45,6 +45,8 @@ public class ChatRoomConverter {
                 .isHost(isHost)
                 .isBanned(false)
                 .joinedAt(LocalDateTime.now())
+                .userScore((double) 0)
+                .joinMessageId(joinMessageId)
                 .build();
     }
 
