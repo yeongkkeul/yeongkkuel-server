@@ -73,6 +73,9 @@ dependencies {
 	/* RabbitMQ */
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
+	/* TSID */
+	implementation 'com.github.f4b6a3:tsid-creator:5.4.0'
+
 	/* S3 */
 	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
 
