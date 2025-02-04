@@ -53,6 +53,7 @@ public class ChatAPIController {
 
     /**
      *
+     *
      * @param chatRoomId
      * @param lastClientMessageId 클라이언트에 저장된 마지막 메시지 ID
      * @return
@@ -66,6 +67,11 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(chatService.synchronizationChatMessages(userId, chatRoomId, lastClientMessageId));
     }
 
+    /**
+     *
+     *
+     * @return
+     */
     @Operation(summary = "클라이언트와 서버의 채팅방 정보 조회", description = "웹소켓 연결이 끊어지면 클라이언트와 서버 간의 채팅방 정보가 일치 하지 않을 수 있기에 이 API를 호출해서 클라이언트가 서버의 데이터를 조회하도록 시켜줍니다.")
     @GetMapping
     public ApiResponse<List<ChatRoomInfoResponseDto>> synchronizationChatRoomsInfo() {

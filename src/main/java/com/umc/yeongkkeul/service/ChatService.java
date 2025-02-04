@@ -177,6 +177,12 @@ public class ChatService {
         return resultMessageList;
     }
 
+    /**
+     *
+     *
+     * @param userId
+     * @return
+     */
     public List<ChatRoomInfoResponseDto> synchronizationChatRoomsInfo(Long userId) {
 
         User user = userRepository.findById(userId)
