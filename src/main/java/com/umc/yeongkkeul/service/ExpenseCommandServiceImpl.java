@@ -50,6 +50,10 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
 
         Expense expense = ExpenseConverter.createExpense(request, user, category, request.getIsExpense());
 
+        // 양방향 연관관계의 일관성을 위해, 생성된 Expense를 Category의 expenseList에 추가
+        // 이렇게 설정해야 나중에 카테고리에서 get을 통해 지출을 가져올 수 있음.
+        category.getExpenseList().add(expense);
+
         // 유저의 지출 내역 저장
         return expenseRepository.save(expense);
     }
