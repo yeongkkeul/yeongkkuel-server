@@ -126,6 +126,4 @@ public class ChatController {
         log.info("The user with senderID has left the chat room.");
         chatService.saveMessages(exitMessageDto);
     }
-
-
 }

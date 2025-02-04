@@ -177,6 +177,23 @@ public class ChatService {
         return resultMessageList;
     }
 
+    public List<ChatRoomInfoResponseDto> synchronizationChatRoomsInfo(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        List<ChatRoomMembership> chatRoomMemberships = chatRoomMembershipRepository.findAllByUserId(user.getId());
+        List<Long> chatRoomIds = chatRoomMemberships.stream()
+                .map(chatRoomMembership -> chatRoomMembership.getChatroom().getId())
+                .toList();
+
+        List<ChatRoom> chatRooms = chatRoomRepository.findAllByIdIn(chatRoomIds);
+
+        return chatRooms.stream()
+                .map(ChatRoomInfoResponseDto::of)
+                .toList();
+    }
+
     /**
      * 메시지를 DB에 저장하고 Redis에 캐시.
      * FIXME: 트랜잭션 범위 떄문에 이에 관한 생각을 조금 해봐야 한다. 현재 메시지는 단순히 백업 용도이기 때문에 중요도가 RDB보다 낮기에 RDB와 트랜잭션을 묶지 않았다.
@@ -273,11 +290,15 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
+        // 인원 추가
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() + 1);
+
         boolean isHost = false; // 호스트가 아니기에 false
         ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, chatRoom, isHost, messageDto.id());
 
         // 채팅방-사용자 관계 테이블 저장
         chatRoomMembershipRepository.save(chatRoomMembership);
+        chatRoomRepository.save(chatRoom);
 
         // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
         try {
@@ -302,6 +323,8 @@ public class ChatService {
         ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
                         .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
 
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() - 1);
+
         // 방장이라면 해당 채팅방을 삭제
         if (chatRoomMembership.getIsHost()) {
 
@@ -312,6 +335,7 @@ public class ChatService {
         } else {
             // 방장이 아니라면 관계 테이블만 삭제
             chatRoomMembershipRepository.delete(chatRoomMembership);
+            chatRoomRepository.save(chatRoom);
         }
 
         // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백

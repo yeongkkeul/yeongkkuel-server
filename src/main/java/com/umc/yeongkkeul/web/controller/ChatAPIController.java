@@ -61,14 +61,21 @@ public class ChatAPIController {
     @GetMapping("/{chatRoomId}/messages")
     public ApiResponse<List<MessageDto>> synchronizationChatMessages(@PathVariable Long chatRoomId, @RequestParam("messageId") Long lastClientMessageId) {
 
-        // FIXME
-        Long userId = 1L;
+        Long userId = toId(getCurrentUserId());
 
         return ApiResponse.onSuccess(chatService.synchronizationChatMessages(userId, chatRoomId, lastClientMessageId));
     }
 
-    // TODO: 웹 소켓 연결이 끊어졌다가 재연결될 경우 특정 채팅방 조회
-    // TODO: 웹 소켓 연결이 끊어졌다가 재연결될 경우 모든 채팅방 조회
+    @Operation(summary = "클라이언트와 서버의 채팅방 정보 조회", description = "웹소켓 연결이 끊어지면 클라이언트와 서버 간의 채팅방 정보가 일치 하지 않을 수 있기에 이 API를 호출해서 클라이언트가 서버의 데이터를 조회하도록 시켜줍니다.")
+    @GetMapping
+    public ApiResponse<List<ChatRoomInfoResponseDto>> synchronizationChatRoomsInfo() {
+
+        Long userId = 1L; //toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(chatService.synchronizationChatRoomsInfo(userId));
+    }
+
+    // TODO: 웹 소켓 연결이 끊어졌다가 재연결될 경우 특정 채팅방 조회(필요하면)
 
     /**
      * @param chatRoomDetailRequestDto 채팅방 생성 DTO
