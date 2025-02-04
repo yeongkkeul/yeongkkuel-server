@@ -2,6 +2,7 @@ package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
+import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomMembershipHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
@@ -9,8 +10,15 @@ import com.umc.yeongkkeul.converter.ChatRoomConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
+import com.umc.yeongkkeul.domain.enums.AgeGroup;
+import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.common.Uuid;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
+import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
+import com.umc.yeongkkeul.repository.ChatRoomRepository;
+import com.umc.yeongkkeul.repository.ExpenseRepository;
+import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.web.dto.chat.*;
 import com.umc.yeongkkeul.repository.*;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
@@ -21,6 +29,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +70,8 @@ public class ChatService {
 
     @Value("${rabbitmq.exchange.name}")
     private String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
+
+    private final int CHATROOM_PAGING_SIZE = 30; // 한 페이지 당 최대 30개를 조회
 
     /**
      * 메시지를 특정 채팅방으로 전송.
@@ -220,6 +233,41 @@ public class ChatService {
         }
     }
 
+    @Transactional
+    public void exitChatRoom(Long userId, Long chatRoomId, MessageDto messageDto) {
+
+        // 탈퇴 희망 사용자
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        // 탈퇴할 그룹 채팅방
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 해당 유저가 방장인지 확인
+        ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
+                        .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 방장이라면 해당 채팅방을 삭제
+        if (chatRoomMembership.getIsHost()) {
+
+            chatRoomMembershipRepository.deleteChatRoomMemberships(chatRoom.getId()); // 모든 연관 엔티티 삭제
+            chatRoomRepository.delete(chatRoom);
+
+            // TODO: 클라이언트에게 특정 타입의 메시지를 보내고 이 타입을 받으면 해당 채팅방의 구독을 취소
+        } else {
+            // 방장이 아니라면 관계 테이블만 삭제
+            chatRoomMembershipRepository.delete(chatRoomMembership);
+        }
+
+        // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
+        try {
+            exitMessage(messageDto);
+        } catch (AmqpException e) {
+            throw new AmqpException("메시지 전송 실패", e); // 예외를 던져서 트랜잭션 롤백 유도
+        }
+    }
+
     /**
      * @param chatRoomId
      * @param password 패스워드 정보
@@ -255,6 +303,51 @@ public class ChatService {
                 .amount(expense.getAmount())
                 .imageUrl(expense.getImageUrl())
                 .isNoSpending(expense.getIsNoSpending())
+                .build();
+    }
+
+    /**
+     * 필터에 맞는 모든 그룹 채팅방을 탐색하는 메서드입니다.
+     * null 값이면 필터링에서 무시합니다.
+     *
+     * @param page 페이지
+     * @param age 연령대
+     * @param minAmount 최소 목표 금액
+     * @param maxAmount 최대 목표 금액
+     * @param job 직업 분야
+     * @return
+     */
+    public PublicChatRoomsDetailResponseDto getPublicChatRooms(int page, String age, Integer minAmount, Integer maxAmount, String job) {
+
+        // 필터에 맞는 채팅방을 한 페이지를 조회한다.
+        Pageable pageable = PageRequest.of(page, CHATROOM_PAGING_SIZE); // 한 페이지 당 최대 30개를 가져온다.
+
+        AgeGroup ageEnum = (age != null) ? AgeGroup.valueOf(age) : null; // 연령대 타입 변환
+        Job jobEnum = (job != null) ? Job.valueOf(job.toUpperCase()) : null; // 직업 타입 변환
+
+        // null 값이면 필터링에서 무시합니다.
+        // 최소 금액이 null 값이면 0원으로, 최대 금액이 null 값이면 2147483647 로 변환해서 필터링합니다.
+        Page<ChatRoom> chatRoomPage = chatRoomRepository.findAllWithPagination(ageEnum, minAmount, maxAmount, jobEnum, pageable);
+        List<ChatRoom> chatRoomList = chatRoomPage.getContent();
+
+        // TODO: 정렬 기준 추가
+        return PublicChatRoomsDetailResponseDto.builder()
+                .publicChatRoomDetailDtos(chatRoomList.stream()
+                        .map(chatRoom -> PublicChatRoomsDetailResponseDto.PublicChatRoomDetailDto.of(chatRoom))
+                        .toList())
+                .build();
+    }
+
+    public PublicChatRoomsDetailResponseDto searchPublicChatRooms(String keyword, int page) {
+
+        Pageable pageable = PageRequest.of(page, CHATROOM_PAGING_SIZE);
+        Page<ChatRoom> chatRoomPage = chatRoomRepository.findByTitleContainingOrderByParticipationCountDesc(keyword, pageable);
+        List<ChatRoom> chatRoomList = chatRoomPage.getContent();
+
+        return PublicChatRoomsDetailResponseDto.builder()
+                .publicChatRoomDetailDtos(chatRoomList.stream()
+                        .map(chatRoom -> PublicChatRoomsDetailResponseDto.PublicChatRoomDetailDto.of(chatRoom))
+                        .toList())
                 .build();
     }
 
