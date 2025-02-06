@@ -64,7 +64,7 @@ public class ChatService {
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
     private final AmazonS3Manager amazonS3Manager;
 
-    private final String READ_STATUS_KEY_PREFIX = "read:message:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
+    private final String READ_STATUS_KEY_PREFIX = "read:room:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
 
     @Value("${rabbitmq.exchange.name}")
@@ -198,6 +198,46 @@ public class ChatService {
         return chatRooms.stream()
                 .map(ChatRoomInfoResponseDto::of)
                 .toList();
+    }
+
+    @Transactional
+    public void readMessage(Long chatRoomId, List<Long> messageList) {
+
+        System.out.println("ChatService.readMessage");
+
+        Map<Long, Integer> unreadCount = new HashMap<>();
+
+        // 채팅방에 참여한 사용자들 조회
+        List<ChatRoomMembership> users = chatRoomMembershipRepository.findAllByChatroomId(chatRoomId);
+        int chatRoomUserCount = users.size();
+
+        for (Long messageId : messageList) {
+
+            String redisKey = READ_STATUS_KEY_PREFIX + chatRoomId + ":message";
+            String field = READ_STATUS_KEY_PREFIX + chatRoomId + ":" + messageId;
+
+            // Redis에서 읽지 않은 상태 조회
+            Integer value = (Integer) redisTemplate.opsForHash().get(redisKey, field);
+
+            if (value == null) {
+                redisTemplate.opsForHash().put(redisKey, field, chatRoomUserCount - 1);
+                unreadCount.put(messageId, chatRoomUserCount - 1);
+            } else {
+
+                if (value > 0) {
+                    redisTemplate.opsForHash().put(redisKey, field, value - 1);
+                    unreadCount.put(messageId, value - 1);
+                }
+            }
+        }
+
+        // 최종 읽음 상태를 포함한 응답 객체 생성
+        ReadMessageResponseDto readMessageResponseDto = ReadMessageResponseDto.builder()
+                .unreadCount(unreadCount)
+                .build();
+
+        // RabbitMQ에 읽음 상태 정보 전송
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, READ_STATUS_KEY_PREFIX + chatRoomId, readMessageResponseDto);
     }
 
     /**

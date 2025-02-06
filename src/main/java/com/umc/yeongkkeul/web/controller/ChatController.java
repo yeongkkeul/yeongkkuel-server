@@ -4,6 +4,7 @@ import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.service.ChatService;
+import com.umc.yeongkkeul.web.dto.chat.ReadMessageRequestDto;
 import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * ChatController 클래스
@@ -125,5 +125,13 @@ public class ChatController {
 
         log.info("The user with senderID has left the chat room.");
         chatService.saveMessages(exitMessageDto);
+    }
+
+    @MessageMapping("read.message.{roomId}")
+    public void readMessage(@DestinationVariable("roomId") Long roomId, ReadMessageRequestDto readMessageRequestDto) {
+
+        System.out.println("ChatController.readMessage");
+
+        chatService.readMessage(roomId, readMessageRequestDto.messageList());
     }
 }
