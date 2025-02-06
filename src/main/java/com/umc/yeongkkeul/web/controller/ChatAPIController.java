@@ -76,7 +76,7 @@ public class ChatAPIController {
     @GetMapping
     public ApiResponse<List<ChatRoomInfoResponseDto>> synchronizationChatRoomsInfo() {
 
-        Long userId = 1L; //toId(getCurrentUserId());
+        Long userId = toId(getCurrentUserId());
 
         return ApiResponse.onSuccess(chatService.synchronizationChatRoomsInfo(userId));
     }
