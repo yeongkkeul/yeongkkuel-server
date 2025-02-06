@@ -19,11 +19,13 @@ public class ExpenseResponseDTO {
         private Long expenseId;
         String content;
         private Integer amount;
+        private Boolean imgExist;
 
-        public ExpenseListViewDTO(Long expenseId, String content, Integer amount) {
+        public ExpenseListViewDTO(Long expenseId, String content, Integer amount, Boolean imgExist) {
             this.expenseId = expenseId;
             this.content = content;
             this.amount = amount;
+            this.imgExist = imgExist;
         }
     }
 
@@ -34,11 +36,13 @@ public class ExpenseResponseDTO {
         private Long expenseId;
         private String expenseName;
         private Integer expenseAmount;
+        private Boolean imgExist;
 
-        public ExpenseListView2DTO(Long expenseId, String expenseName, Integer expenseAmount) {
+        public ExpenseListView2DTO(Long expenseId, String expenseName, Integer expenseAmount, Boolean imgExist) {
             this.expenseId = expenseId;
             this.expenseName = expenseName;
             this.expenseAmount = expenseAmount;
+            this.imgExist = imgExist;
         }
     }
 

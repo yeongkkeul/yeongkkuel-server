@@ -58,12 +58,22 @@ public class CategoryConverter {
                         category.getName(),  // 카테고리 이름만 포함
                         category.getExpenseList().stream()  // Expense 리스트를 해당 유저의 지출 내역만 가져오기
                                 .filter(expense -> expense.getUser().equals(user) // 유저의 지출만!
-                                         && expense.getDay().equals(today))  // 그중에서도 today 지출만!!
+                                        && expense.getDay().equals(today))  // 그중에서도 today 지출만!!
                                 .map(expense -> new ExpenseResponseDTO.ExpenseListViewDTO(
-                                        expense.getId(), expense.getContent(), expense.getAmount()))
+                                        expense.getId(),
+                                        expense.getContent(),
+                                        expense.getAmount(),
+                                        isImageExist(expense.getImageUrl()) // expenseImg에 대한 추가적인 체크
+                                ))
                                 .collect(Collectors.toList())
                 ))
                 .collect(Collectors.toList());
+    }
+
+    // 이미지 URL이 존재하는지 체크
+    // 일단 지출 생성할 때 null로 적어서 제출했거나 빈칸으로 뒀을 때 null로 인식하고자 함
+    private static boolean isImageExist(String expenseImg) {
+        return expenseImg != null && !expenseImg.trim().isEmpty() && !expenseImg.equals("null");
     }
 
     // 지출 화면 - 일별 사용자의 카테고리별 지출 기록(목록)조회
@@ -81,7 +91,10 @@ public class CategoryConverter {
                                 .filter(expense -> expense.getUser().equals(user) // 유저의 지출만!
                                         && expense.getDay().equals(today))  // 그중에서도 today에 해당되는 지출만!!
                                 .map(expense -> new ExpenseResponseDTO.ExpenseListView2DTO(
-                                        expense.getId(), expense.getContent(), expense.getAmount()))
+                                        expense.getId(),
+                                        expense.getContent(),
+                                        expense.getAmount(),
+                                        isImageExist(expense.getImageUrl())))
                                 .collect(Collectors.toList())
                 ))
                 .collect(Collectors.toList());
