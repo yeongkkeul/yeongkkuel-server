@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,9 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -108,7 +107,7 @@ public class ChatService {
     }
 
     /**
-     * 특정 채팅방의 모든 메시지를 조회.
+     * 특정 채팅방의 모든 메시지를 조회 - 테스트 용도.
      *
      * @param chatRoomId 조회할 채팅방 ID
      * @return List<MessageDto> 채팅방의 메시지 리스트
@@ -120,6 +119,84 @@ public class ChatService {
 
         return messgeList.stream()
                 .map(object -> (MessageDto) object)
+                .toList();
+    }
+
+    /**
+     * 특정 채팅방 클라이언트에서 업데이트 되지 않은 메시지를 조회
+     *
+     * @param userId
+     * @param chatRoomId
+     * @param lastClientMessageId
+     * @return
+     */
+    public List<MessageDto> synchronizationChatMessages(Long userId, Long chatRoomId, Long lastClientMessageId) {
+
+        List<MessageDto> resultMessageList = new ArrayList<>();
+
+        ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId)
+                .orElseThrow();
+
+        // 채팅방 입장 메시지 ID
+        // 이전의 채팅 내역은 못본다.
+        Long joinServerMessageId = chatRoomMembership.getJoinMessageId();
+
+        String redisKey = "chat:room:" + chatRoomId + ":message";
+        ListOperations<String, Object> listOps = redisTemplate.opsForList();
+        long messageSize = listOps.size(redisKey);
+
+        // 30개씩 읽어오며, ID를 찾을 때까지 반복
+        final int REDIS_BATCH_SIZE = 30;
+        for (long start = 0; start < messageSize; start += REDIS_BATCH_SIZE) {
+
+            long end = start + REDIS_BATCH_SIZE - 1;
+            if (end >= messageSize) end = messageSize - 1;
+
+            List<Object> messgeList = redisTemplate.opsForList().range(redisKey, start, end);
+
+            // 읽어온 메시지들에서 lastClientMessageId를 포함하는 메시지 찾기
+            for (Object message : messgeList) {
+                if (message != null) {
+
+                    MessageDto messageDto = (MessageDto) message;
+                    resultMessageList.add(messageDto);
+
+                    // 최신 메시지일 수록 ID값이 커지고 현재 탐색한 메시지가 채팅방 입장 메시지보다 작다는 것은 채팅방 이전의 메시지를 본다는 것이기에 반환해준다.
+                    if (messageDto.id() < joinServerMessageId) return resultMessageList;
+
+                    if (Objects.equals(messageDto.id(), lastClientMessageId)) {
+                        return resultMessageList;
+                    }
+                } else {
+                    log.error("The Message is NULL.");
+                    return null;
+                }
+            }
+        }
+
+        return resultMessageList;
+    }
+
+    /**
+     *
+     *
+     * @param userId
+     * @return
+     */
+    public List<ChatRoomInfoResponseDto> synchronizationChatRoomsInfo(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        List<ChatRoomMembership> chatRoomMemberships = chatRoomMembershipRepository.findAllByUserId(user.getId());
+        List<Long> chatRoomIds = chatRoomMemberships.stream()
+                .map(chatRoomMembership -> chatRoomMembership.getChatroom().getId())
+                .toList();
+
+        List<ChatRoom> chatRooms = chatRoomRepository.findAllByIdIn(chatRoomIds);
+
+        return chatRooms.stream()
+                .map(ChatRoomInfoResponseDto::of)
                 .toList();
     }
 
@@ -171,7 +248,7 @@ public class ChatService {
         // 채팅방-사용자 저장
         // 방장이기에 isHost에 true값 설정
         boolean isHost = true;
-        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, savedChatRoom, isHost);
+        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, savedChatRoom, isHost, -1L);
         chatRoomMembershipRepository.save(chatRoomMembership);
 
         return savedChatRoom.getId();
@@ -188,7 +265,7 @@ public class ChatService {
 
         // 최근 활동을 확인하기 위해 Redis에서 가장 마지막에 저장된 List를 가져오는 로직
         String redisKey = "chat:room:" + chatRoomId + ":message";
-        Object lastMessageObject = redisTemplate.opsForList().index(redisKey, -1);
+        Object lastMessageObject = redisTemplate.opsForList().index(redisKey, 0);
 
         // redisKey가 존재하지 않거나 리스트가 비어 있으면 null 반환
         if (lastMessageObject != null) {
@@ -219,11 +296,15 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
+        // 인원 추가
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() + 1);
+
         boolean isHost = false; // 호스트가 아니기에 false
-        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, chatRoom, isHost);
+        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, chatRoom, isHost, messageDto.id());
 
         // 채팅방-사용자 관계 테이블 저장
         chatRoomMembershipRepository.save(chatRoomMembership);
+        chatRoomRepository.save(chatRoom);
 
         // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
         try {
@@ -248,6 +329,8 @@ public class ChatService {
         ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
                         .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
 
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() - 1);
+
         // 방장이라면 해당 채팅방을 삭제
         if (chatRoomMembership.getIsHost()) {
 
@@ -258,6 +341,7 @@ public class ChatService {
         } else {
             // 방장이 아니라면 관계 테이블만 삭제
             chatRoomMembershipRepository.delete(chatRoomMembership);
+            chatRoomRepository.save(chatRoom);
         }
 
         // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
@@ -357,12 +441,12 @@ public class ChatService {
      * @param lastActivityTime 마지막 메시지를 보낸 시간
      * @return 마지막 활동 시간을 현재 시간과 비교하여 문자열로 반환
      */
-    private String convertToLastActivity(LocalDateTime lastActivityTime) {
+    private String convertToLastActivity(String lastActivityTime) {
 
         // lastActivityTime이 null이라면 메서드 종료
-        if (lastActivityTime == null) return null;
+        if (lastActivityTime == null || lastActivityTime.isEmpty()) return null;
 
-        long seconds = Duration.between(lastActivityTime, LocalDateTime.now()).getSeconds();
+        long seconds = Duration.between(LocalDateTime.parse(lastActivityTime), LocalDateTime.now()).getSeconds();
 
         if (seconds < 60) return seconds + "초 전 활동";
         if (seconds < 3600) return (seconds / 60) + "분 전 활동";

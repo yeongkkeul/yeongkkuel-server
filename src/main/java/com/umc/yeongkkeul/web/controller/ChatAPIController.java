@@ -38,13 +38,10 @@ public class ChatAPIController {
      * @param chatRoomId  조회할 채팅방 ID
      * @return ResponseEntity<List<MessageDto>> 채팅 메시지 리스트
      *
-     * 주의: 이 메서드는 서버 DB에서 데이터를 반복적으로 가져오므로 성능 문제가 발생할 수 있음.
-     *       가능한 한 호출 횟수를 줄이는 방식으로 개선 필요.
+     * 주의: 이 API는 단순히 테스트 용도로 사용.
      */
-    // TODO: 로컬 DB와 서버 DB의 사용 여부에 따라 로직을 수정해야 한다.
-    // TODO: 로컬 DB에 저장한다고 해도 채팅방 상태가 바뀔 수도 있기 때문에 이를 지속적으로 추적하거나 요청해도 변경점을 찾아야 하는 로직이 필요하다.
-    @GetMapping("/{chatRoomId}")
-    @Operation(summary = "특정 채팅방 메시지 조회", description = "특정 채팅방의 모든 메시지를 조회합니다.")
+    @GetMapping("/{chatRoomId}/messages/test")
+    @Operation(summary = "특정 채팅방 메시지 조회 - 테스트 용도", description = "특정 채팅방의 모든 메시지를 조회합니다. 실제 환경에서 채팅방의 모든 메시지를 가져오는 것은 성능의 문제가 있으므로 테스트 용도로 사용합니다.")
     public ApiResponse<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
 
         Long userId = toId(getCurrentUserId());
@@ -53,6 +50,38 @@ public class ChatAPIController {
 
         return ApiResponse.onSuccess(messageDtos);
     }
+
+    /**
+     *
+     *
+     * @param chatRoomId
+     * @param lastClientMessageId 클라이언트에 저장된 마지막 메시지 ID
+     * @return
+     */
+    @Operation(summary = "클라이언트와 서버의 메시지 동기화(조회)", description = "웹소켓이 재연결되거나 오류로 인해 메시지를 받지 못할 경우를 생각해서 특정 채팅방에 들어가면 항상 이 API를 호출합니다. 인터넷에 연결되지 않거나 다른 이유로 정상적인 응답을 받지 못하면 기존에 클라이언트에 저장되었던 정보를 화면에 유지합니다.")
+    @GetMapping("/{chatRoomId}/messages")
+    public ApiResponse<List<MessageDto>> synchronizationChatMessages(@PathVariable Long chatRoomId, @RequestParam("messageId") Long lastClientMessageId) {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(chatService.synchronizationChatMessages(userId, chatRoomId, lastClientMessageId));
+    }
+
+    /**
+     *
+     *
+     * @return
+     */
+    @Operation(summary = "클라이언트와 서버의 채팅방 정보 조회", description = "웹소켓 연결이 끊어지면 클라이언트와 서버 간의 채팅방 정보가 일치 하지 않을 수 있기에 이 API를 호출해서 클라이언트가 서버의 데이터를 조회하도록 시켜줍니다.")
+    @GetMapping
+    public ApiResponse<List<ChatRoomInfoResponseDto>> synchronizationChatRoomsInfo() {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(chatService.synchronizationChatRoomsInfo(userId));
+    }
+
+    // TODO: 웹 소켓 연결이 끊어졌다가 재연결될 경우 특정 채팅방 조회(필요하면)
 
     /**
      * @param chatRoomDetailRequestDto 채팅방 생성 DTO

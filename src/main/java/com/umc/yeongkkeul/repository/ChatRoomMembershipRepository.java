@@ -16,8 +16,9 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
     @Query("SELECT c FROM ChatRoomMembership c WHERE c.chatroom.id = :chatRoomId ORDER BY c.userScore DESC")
     List<ChatRoomMembership> findByChatroomIdOrderByUserScoreDesc(@Param("chatRoomId") Long chatRoomId);
 
-
     Optional<ChatRoomMembership> findByUserIdAndChatroomId(Long userId, Long chatRoomId);
+
+    List<ChatRoomMembership> findAllByUserId(Long userId);
 
     @Modifying
     @Transactional
