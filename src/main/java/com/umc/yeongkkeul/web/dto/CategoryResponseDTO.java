@@ -35,6 +35,7 @@ public class CategoryResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CategoryViewListWithHomeDTO{
+        Long categoryId;
         String categoryName;
         List<ExpenseResponseDTO.ExpenseListViewDTO> expenses;
     }
@@ -44,6 +45,7 @@ public class CategoryResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CategoryViewListWithExpenditureDTO{
+        Long categoryId;
         String categoryName;
         int red;
         int green;
@@ -56,6 +58,7 @@ public class CategoryResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CategoryViewListWithWeeklyExpenditureDTO{
+        Long categoryId;
         String categoryName;
         int red;
         int green;
