@@ -177,15 +177,15 @@ public class ChatAPIController {
      * 채팅 이미지 업로드 API
      * 클라이언트는 이미지를 업로드한 후, 반환된 이미지 URL을 포함하여 채팅 메시지를 전송할 수 있습니다.
      *
-     * @param chatRoomId 채팅방 ID
-     * @param file 업로드할 이미지 파일 (Multipart 형식)
      * @return S3에 저장된 이미지 URL
      */
-    @PostMapping("/{chatRoomId}/images")
+    @PostMapping(value = "/{chatRoomId}/images", consumes = "multipart/form-data")
     @Operation(summary = "채팅 이미지 업로드", description = "채팅 이미지를 S3에 업로드하고 이미지 URL을 반환합니다.")
-    public ApiResponse<String> uploadChatImage(@PathVariable Long chatRoomId,
-                                               @RequestParam("file") MultipartFile file) {
-        String imageUrl = chatService.uploadChatImage(chatRoomId, file);
+    public ApiResponse<String> uploadChatImage(@RequestBody ImageChatRequestDTO.ImageDTO request,
+                                               @PathVariable Long chatRoomId
+                                               ) {
+        Long userId = toId(getCurrentUserId());
+        String imageUrl = chatService.uploadChatImage(userId,chatRoomId, request.getChatPicture());
         return ApiResponse.onSuccess(imageUrl);
     }
 

@@ -490,12 +490,15 @@ public class ChatService {
      * 2. 저장한 Uuid를 기반으로 S3 key 생성
      * 3. AmazonS3Manager를 통해 파일 업로드 후 S3에 저장된 URL 반환
      *
-     * @param chatRoomId 채팅방 ID (필요에 따라 추가 검증 가능)
-     * @param file 업로드할 이미지 파일
      * @return S3에 저장된 이미지 URL
      */
     @Transactional
-    public String uploadChatImage(Long chatRoomId, MultipartFile file) {
+    public String uploadChatImage(Long userId,Long chatRoomId, MultipartFile file) {
+        // chatRoomId를 통해, 유저가 해당 채팅방에 소속해있는지 점검
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+        chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId).orElseThrow(()->new ChatRoomMembershipHandler(ErrorStatus._CHATROOM_NO_PERMISSION));
+
+        // 해당 유저가 채팅방에 소속되어 권한 인증이 완료되면, 이미지를 업로드해서 url 리턴
         // 새로운 Uuid 엔티티 생성 (랜덤 UUID 문자열 생성)
         Uuid uuidEntity = Uuid.builder().uuid(UUID.randomUUID().toString()).build();
         // DB에 저장 (중복 방지)
