@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SocketConnectionTracker {
+
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String ONLINE_KEY_PREFIX = "socket:online:";
 
@@ -13,21 +14,29 @@ public class SocketConnectionTracker {
     }
 
     /**
-     * 사용자를 온라인 상태로 표시합니다.
+     * 사용자 ID를 기반으로 온라인 상태를 Redis에 기록합니다.
+     * 필요에 따라 TTL(Time To Live)을 설정할 수도 있습니다.
+     *
+     * @param userId 연결된 사용자의 고유 ID
      */
     public void setUserOnline(Long userId) {
         redisTemplate.opsForValue().set(ONLINE_KEY_PREFIX + userId, true);
     }
 
     /**
-     * 사용자를 오프라인 상태로 표시합니다.
+     * 사용자 ID에 해당하는 온라인 상태 키를 삭제하여 오프라인 상태로 만듭니다.
+     *
+     * @param userId 연결 종료한 사용자의 고유 ID
      */
     public void setUserOffline(Long userId) {
         redisTemplate.delete(ONLINE_KEY_PREFIX + userId);
     }
 
     /**
-     * 사용자의 연결 상태(온라인 여부)를 반환합니다.
+     * 특정 사용자 ID의 온라인 여부를 반환합니다.
+     *
+     * @param userId 확인할 사용자의 고유 ID
+     * @return 온라인이면 true, 그렇지 않으면 false
      */
     public boolean isUserOnline(Long userId) {
         Object status = redisTemplate.opsForValue().get(ONLINE_KEY_PREFIX + userId);
