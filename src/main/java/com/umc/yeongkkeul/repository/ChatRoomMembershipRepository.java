@@ -24,4 +24,9 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
     @Transactional
     @Query("DELETE FROM ChatRoomMembership c WHERE c.chatroom.id = :chatRoomId")
     void deleteChatRoomMemberships(@Param("chatRoomId") Long chatRoomId);
+
+    int countByChatroomId(Long chatRoomId);
+
+    @Query("SELECT cm.user.id FROM ChatRoomMembership cm WHERE cm.chatroom.id = :chatRoomId")
+    List<Long> findUserIdByChatroomId(@Param("chatRoomId") Long chatRoomId);
 }

@@ -29,4 +29,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("SELECT c FROM ChatRoom c WHERE c.id IN :chatRoomIds")
     List<ChatRoom> findAllByIdIn(@Param("chatRoomIds") List<Long> chatRoomIds);
 
+    List<ChatRoom> findAllByAgeGroupFilterAndJobFilterOrderByTotalScoreDesc(AgeGroup ageGroupFilter, Job jobFilter);
+
+    List<ChatRoom> findAllByAgeGroupFilterOrderByTotalScoreDesc(AgeGroup ageGroupFilter);
+
+    List<ChatRoom> findAllByJobFilterOrderByTotalScoreDesc(Job jobFilter);
 }
