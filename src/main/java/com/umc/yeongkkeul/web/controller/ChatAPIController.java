@@ -221,4 +221,15 @@ public class ChatAPIController {
 
         return ResponseEntity.ok().body(chatService.searchPublicChatRooms(keyword, page));
     }
+
+    @Operation(summary = "채팅방/방장용 페이지 - 채팅방 수정", description = "채팅방 정보를 수정합니다.")
+    @PutMapping("/{chatRoomId}")
+    public ApiResponse<Long> updateChatRoom(
+            @PathVariable("chatRoomId") Long chatRoomId,
+            @RequestBody @Valid ChatRoomDetailRequestDto.ChatRoomUpdateDTO updateDTO
+    ){
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(chatService.updateChatRoom(userId, chatRoomId, updateDTO));
+    }
 }
