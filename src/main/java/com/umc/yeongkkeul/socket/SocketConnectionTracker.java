@@ -3,12 +3,17 @@ package com.umc.yeongkkeul.socket;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 @Component
 public class SocketConnectionTracker {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String ONLINE_KEY_PREFIX = "socket:online:";
-
+    // TTL 시간 - 소켓 비정상연결 종료 관리위함
+    private static final long TTL_MINUTES = 10;
+    
+    
     public SocketConnectionTracker(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
@@ -20,7 +25,8 @@ public class SocketConnectionTracker {
      * @param userId 연결된 사용자의 고유 ID
      */
     public void setUserOnline(Long userId) {
-        redisTemplate.opsForValue().set(ONLINE_KEY_PREFIX + userId, true);
+        String key = ONLINE_KEY_PREFIX + userId;
+        redisTemplate.opsForValue().set(key, true, TTL_MINUTES, TimeUnit.MINUTES);
     }
 
     /**
