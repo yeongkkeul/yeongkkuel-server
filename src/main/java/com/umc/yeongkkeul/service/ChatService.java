@@ -18,6 +18,7 @@ import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
 import com.umc.yeongkkeul.repository.ExpenseRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.socket.SocketConnectionTracker;
 import com.umc.yeongkkeul.web.dto.chat.*;
 import com.umc.yeongkkeul.repository.*;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
@@ -70,18 +71,38 @@ public class ChatService {
     @Value("${rabbitmq.exchange.name}")
     private String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
 
+    // SocketConnectionTracker를 추가하여 온라인 상태를 확인할 수 있도록 함
+    private final SocketConnectionTracker socketConnectionTracker;
+
     private final int CHATROOM_PAGING_SIZE = 30; // 한 페이지 당 최대 30개를 조회
 
     /**
-     * 메시지를 특정 채팅방으로 전송.
-     * RabbitMQ를 사용하여 메시지를 해당 채팅방에 있는 모든 클라이언트로 전송.
-     *
-     * @param messageDto 전송할 메시지 정보
+     * 오픈 채팅방에 메시지를 전송하는 통합 메서드.
+     * 온라인 수신자에게는 RabbitMQ를 통해 실시간 전송,
+     * 오프라인 수신자에게는 FCM 푸시 분기 처리를 수행합니다.
      */
+    @Transactional
     public void sendMessage(MessageDto messageDto) {
-
-        // RabbitMQ의 특정 채팅방으로 메시지 전송
+        // 기존 RabbitMQ를 통한 실시간 메시지 전송 (온라인 구독자 대상) -> 온라인이면 sub 정보 남아있고, 오프라인이면 휘발돼서 상관없음
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
+
+        // 해당 채팅방의 모든 멤버 조회 (MySQL의 membership 테이블)
+        List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(messageDto.chatRoomId());
+
+        // 각 멤버에 대해 온라인 상태 확인 후, 오프라인이면 FCM 푸시 처리 (현재는 로그 출력)
+        for (ChatRoomMembership membership : memberships) {
+            Long memberId = membership.getUser().getId();
+            // 보낸 사용자는 제외
+            if (memberId.equals(messageDto.senderId())) {
+                continue;
+            }
+
+            if (!socketConnectionTracker.isUserOnline(memberId)) {
+                // 오프라인인 경우 FCM 푸시 분기 처리 (아직 FCM 로직은 구현하지 않음)
+                log.info("User {} is offline. FCM push triggered.", memberId); // TODO: FCM 전송 로직 추가
+            }
+        }
     }
 
     /**
