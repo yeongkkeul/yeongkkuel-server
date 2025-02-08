@@ -19,11 +19,13 @@ public class ExpenseResponseDTO {
         private Long expenseId;
         String content;
         private Integer amount;
+        private Boolean imgExist;
 
-        public ExpenseListViewDTO(Long expenseId, String content, Integer amount) {
+        public ExpenseListViewDTO(Long expenseId, String content, Integer amount, Boolean imgExist) {
             this.expenseId = expenseId;
             this.content = content;
             this.amount = amount;
+            this.imgExist = imgExist;
         }
     }
 
@@ -31,12 +33,16 @@ public class ExpenseResponseDTO {
     @Getter
     @NoArgsConstructor
     public static class ExpenseListView2DTO { // expenseName, expenseAmount -> 일별 사용자의 카테고리별 지출 기록(목록)조회 때 사용
+        private Long expenseId;
         private String expenseName;
         private Integer expenseAmount;
+        private Boolean imgExist;
 
-        public ExpenseListView2DTO(String expenseName, Integer expenseAmount) {
+        public ExpenseListView2DTO(Long expenseId, String expenseName, Integer expenseAmount, Boolean imgExist) {
+            this.expenseId = expenseId;
             this.expenseName = expenseName;
             this.expenseAmount = expenseAmount;
+            this.imgExist = imgExist;
         }
     }
 

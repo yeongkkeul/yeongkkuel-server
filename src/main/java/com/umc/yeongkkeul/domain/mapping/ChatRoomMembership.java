@@ -55,4 +55,7 @@ public class ChatRoomMembership extends BaseEntity {
     // 개인 점수 (랭킹용)
     @Column(name = "user_score")
     private Double userScore;
+
+    @Column(name = "join_message_id")
+    private Long joinMessageId;
 }

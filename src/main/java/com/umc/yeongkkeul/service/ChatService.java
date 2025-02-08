@@ -18,6 +18,7 @@ import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
 import com.umc.yeongkkeul.repository.ExpenseRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.socket.SocketConnectionTracker;
 import com.umc.yeongkkeul.web.dto.chat.*;
 import com.umc.yeongkkeul.repository.*;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,9 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -71,18 +71,38 @@ public class ChatService {
     @Value("${rabbitmq.exchange.name}")
     private String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
 
+    // SocketConnectionTracker를 추가하여 온라인 상태를 확인할 수 있도록 함
+    private final SocketConnectionTracker socketConnectionTracker;
+
     private final int CHATROOM_PAGING_SIZE = 30; // 한 페이지 당 최대 30개를 조회
 
     /**
-     * 메시지를 특정 채팅방으로 전송.
-     * RabbitMQ를 사용하여 메시지를 해당 채팅방에 있는 모든 클라이언트로 전송.
-     *
-     * @param messageDto 전송할 메시지 정보
+     * 오픈 채팅방에 메시지를 전송하는 통합 메서드.
+     * 온라인 수신자에게는 RabbitMQ를 통해 실시간 전송,
+     * 오프라인 수신자에게는 FCM 푸시 분기 처리를 수행합니다.
      */
+    @Transactional
     public void sendMessage(MessageDto messageDto) {
-
-        // RabbitMQ의 특정 채팅방으로 메시지 전송
+        // 기존 RabbitMQ를 통한 실시간 메시지 전송 (온라인 구독자 대상) -> 온라인이면 sub 정보 남아있고, 오프라인이면 휘발돼서 상관없음
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
+
+        // 해당 채팅방의 모든 멤버 조회 (MySQL의 membership 테이블)
+        List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(messageDto.chatRoomId());
+
+        // 각 멤버에 대해 온라인 상태 확인 후, 오프라인이면 FCM 푸시 처리 (현재는 로그 출력)
+        for (ChatRoomMembership membership : memberships) {
+            Long memberId = membership.getUser().getId();
+            // 보낸 사용자는 제외
+            if (memberId.equals(messageDto.senderId())) {
+                continue;
+            }
+
+            if (!socketConnectionTracker.isUserOnline(memberId)) {
+                // 오프라인인 경우 FCM 푸시 분기 처리 (아직 FCM 로직은 구현하지 않음)
+                log.info("User {} is offline. FCM push triggered.", memberId); // TODO: FCM 전송 로직 추가
+            }
+        }
     }
 
     /**
@@ -108,7 +128,7 @@ public class ChatService {
     }
 
     /**
-     * 특정 채팅방의 모든 메시지를 조회.
+     * 특정 채팅방의 모든 메시지를 조회 - 테스트 용도.
      *
      * @param chatRoomId 조회할 채팅방 ID
      * @return List<MessageDto> 채팅방의 메시지 리스트
@@ -120,6 +140,84 @@ public class ChatService {
 
         return messgeList.stream()
                 .map(object -> (MessageDto) object)
+                .toList();
+    }
+
+    /**
+     * 특정 채팅방 클라이언트에서 업데이트 되지 않은 메시지를 조회
+     *
+     * @param userId
+     * @param chatRoomId
+     * @param lastClientMessageId
+     * @return
+     */
+    public List<MessageDto> synchronizationChatMessages(Long userId, Long chatRoomId, Long lastClientMessageId) {
+
+        List<MessageDto> resultMessageList = new ArrayList<>();
+
+        ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId)
+                .orElseThrow();
+
+        // 채팅방 입장 메시지 ID
+        // 이전의 채팅 내역은 못본다.
+        Long joinServerMessageId = chatRoomMembership.getJoinMessageId();
+
+        String redisKey = "chat:room:" + chatRoomId + ":message";
+        ListOperations<String, Object> listOps = redisTemplate.opsForList();
+        long messageSize = listOps.size(redisKey);
+
+        // 30개씩 읽어오며, ID를 찾을 때까지 반복
+        final int REDIS_BATCH_SIZE = 30;
+        for (long start = 0; start < messageSize; start += REDIS_BATCH_SIZE) {
+
+            long end = start + REDIS_BATCH_SIZE - 1;
+            if (end >= messageSize) end = messageSize - 1;
+
+            List<Object> messgeList = redisTemplate.opsForList().range(redisKey, start, end);
+
+            // 읽어온 메시지들에서 lastClientMessageId를 포함하는 메시지 찾기
+            for (Object message : messgeList) {
+                if (message != null) {
+
+                    MessageDto messageDto = (MessageDto) message;
+                    resultMessageList.add(messageDto);
+
+                    // 최신 메시지일 수록 ID값이 커지고 현재 탐색한 메시지가 채팅방 입장 메시지보다 작다는 것은 채팅방 이전의 메시지를 본다는 것이기에 반환해준다.
+                    if (messageDto.id() < joinServerMessageId) return resultMessageList;
+
+                    if (Objects.equals(messageDto.id(), lastClientMessageId)) {
+                        return resultMessageList;
+                    }
+                } else {
+                    log.error("The Message is NULL.");
+                    return null;
+                }
+            }
+        }
+
+        return resultMessageList;
+    }
+
+    /**
+     *
+     *
+     * @param userId
+     * @return
+     */
+    public List<ChatRoomInfoResponseDto> synchronizationChatRoomsInfo(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        List<ChatRoomMembership> chatRoomMemberships = chatRoomMembershipRepository.findAllByUserId(user.getId());
+        List<Long> chatRoomIds = chatRoomMemberships.stream()
+                .map(chatRoomMembership -> chatRoomMembership.getChatroom().getId())
+                .toList();
+
+        List<ChatRoom> chatRooms = chatRoomRepository.findAllByIdIn(chatRoomIds);
+
+        return chatRooms.stream()
+                .map(ChatRoomInfoResponseDto::of)
                 .toList();
     }
 
@@ -171,7 +269,7 @@ public class ChatService {
         // 채팅방-사용자 저장
         // 방장이기에 isHost에 true값 설정
         boolean isHost = true;
-        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, savedChatRoom, isHost);
+        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, savedChatRoom, isHost, -1L);
         chatRoomMembershipRepository.save(chatRoomMembership);
 
         return savedChatRoom.getId();
@@ -188,7 +286,7 @@ public class ChatService {
 
         // 최근 활동을 확인하기 위해 Redis에서 가장 마지막에 저장된 List를 가져오는 로직
         String redisKey = "chat:room:" + chatRoomId + ":message";
-        Object lastMessageObject = redisTemplate.opsForList().index(redisKey, -1);
+        Object lastMessageObject = redisTemplate.opsForList().index(redisKey, 0);
 
         // redisKey가 존재하지 않거나 리스트가 비어 있으면 null 반환
         if (lastMessageObject != null) {
@@ -219,11 +317,15 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
+        // 인원 추가
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() + 1);
+
         boolean isHost = false; // 호스트가 아니기에 false
-        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, chatRoom, isHost);
+        ChatRoomMembership chatRoomMembership = ChatRoomConverter.toChatRoomMembershipEntity(user, chatRoom, isHost, messageDto.id());
 
         // 채팅방-사용자 관계 테이블 저장
         chatRoomMembershipRepository.save(chatRoomMembership);
+        chatRoomRepository.save(chatRoom);
 
         // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
         try {
@@ -248,6 +350,8 @@ public class ChatService {
         ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
                         .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
 
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() - 1);
+
         // 방장이라면 해당 채팅방을 삭제
         if (chatRoomMembership.getIsHost()) {
 
@@ -258,6 +362,7 @@ public class ChatService {
         } else {
             // 방장이 아니라면 관계 테이블만 삭제
             chatRoomMembershipRepository.delete(chatRoomMembership);
+            chatRoomRepository.save(chatRoom);
         }
 
         // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
@@ -357,12 +462,12 @@ public class ChatService {
      * @param lastActivityTime 마지막 메시지를 보낸 시간
      * @return 마지막 활동 시간을 현재 시간과 비교하여 문자열로 반환
      */
-    private String convertToLastActivity(LocalDateTime lastActivityTime) {
+    private String convertToLastActivity(String lastActivityTime) {
 
         // lastActivityTime이 null이라면 메서드 종료
-        if (lastActivityTime == null) return null;
+        if (lastActivityTime == null || lastActivityTime.isEmpty()) return null;
 
-        long seconds = Duration.between(lastActivityTime, LocalDateTime.now()).getSeconds();
+        long seconds = Duration.between(LocalDateTime.parse(lastActivityTime), LocalDateTime.now()).getSeconds();
 
         if (seconds < 60) return seconds + "초 전 활동";
         if (seconds < 3600) return (seconds / 60) + "분 전 활동";
@@ -406,12 +511,15 @@ public class ChatService {
      * 2. 저장한 Uuid를 기반으로 S3 key 생성
      * 3. AmazonS3Manager를 통해 파일 업로드 후 S3에 저장된 URL 반환
      *
-     * @param chatRoomId 채팅방 ID (필요에 따라 추가 검증 가능)
-     * @param file 업로드할 이미지 파일
      * @return S3에 저장된 이미지 URL
      */
     @Transactional
-    public String uploadChatImage(Long chatRoomId, MultipartFile file) {
+    public String uploadChatImage(Long userId,Long chatRoomId, MultipartFile file) {
+        // chatRoomId를 통해, 유저가 해당 채팅방에 소속해있는지 점검
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+        chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId).orElseThrow(()->new ChatRoomMembershipHandler(ErrorStatus._CHATROOM_NO_PERMISSION));
+
+        // 해당 유저가 채팅방에 소속되어 권한 인증이 완료되면, 이미지를 업로드해서 url 리턴
         // 새로운 Uuid 엔티티 생성 (랜덤 UUID 문자열 생성)
         Uuid uuidEntity = Uuid.builder().uuid(UUID.randomUUID().toString()).build();
         // DB에 저장 (중복 방지)

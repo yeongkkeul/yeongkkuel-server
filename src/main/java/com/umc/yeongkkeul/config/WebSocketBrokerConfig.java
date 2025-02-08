@@ -1,7 +1,10 @@
 package com.umc.yeongkkeul.config;
 
+import com.umc.yeongkkeul.socket.SocketSessionInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.messaging.simp.stomp.StompReactorNettyCodec;
 import org.springframework.messaging.tcp.reactor.ReactorNettyTcpClient;
@@ -23,6 +26,15 @@ public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
     private final String RABBITMQ_HOST;
     private final String RABBITMQ_USERNAME;
     private final String RABBITMQ_PASSWORD;
+
+    @Autowired
+    private SocketSessionInterceptor socketSessionInterceptor;
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(socketSessionInterceptor);
+    }
+
 
     public WebSocketBrokerConfig (
             @Value("${spring.rabbitmq.host}") String RABBITMQ_HOST,
