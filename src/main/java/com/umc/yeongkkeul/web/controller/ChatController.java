@@ -56,7 +56,6 @@ public class ChatController {
     /**
      * 유저가 특정 채팅방(roomId)에 입장했을 때 처리.
      * "chat.enter.{roomId}" 경로로 STOMP 메시지가 전송되면 호출.
-     * FIXME: message 특성 상 로그인 한 사용자를 알기 힘드므로 보안 상의 문제가 있을 수도 있다.
      *
      * @param roomId      채팅방 ID
      * @param enterMessageDto  전송된 메시지 데이터
