@@ -91,7 +91,7 @@ public class ChatAPIController {
     @Operation(summary = "채팅방 생성", description = "그룹 채팅방을 생성합니다.")
     public ApiResponse<Long> createChatRoom(@RequestBody @Valid ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
 
-        Long userId = toId(getCurrentUserId());
+        Long userId = 1L; //toId(getCurrentUserId());
 
         return ApiResponse.onSuccess(chatService.createChatRoom(userId, chatRoomDetailRequestDto));
     }

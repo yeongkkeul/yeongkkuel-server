@@ -74,7 +74,7 @@ public class ChatService {
     // SocketConnectionTracker를 추가하여 온라인 상태를 확인할 수 있도록 함
     private final SocketConnectionTracker socketConnectionTracker;
 
-    private final int CHATROOM_PAGING_SIZE = 30; // 한 페이지 당 최대 30개를 조회
+    private final int CHATROOM_PAGING_SIZE = 20; // 한 페이지 당 최대 30개를 조회
 
     /**
      * 오픈 채팅방에 메시지를 전송하는 통합 메서드.
@@ -145,10 +145,11 @@ public class ChatService {
 
     /**
      * 특정 채팅방 클라이언트에서 업데이트 되지 않은 메시지를 조회
+     * chatRoomId르 가진 채팅방의 클라이언트의 채팅 내역과 서버의 채팅 내역을 동기화 하는 메서드
      *
      * @param userId
      * @param chatRoomId
-     * @param lastClientMessageId
+     * @param lastClientMessageId 클라이언트에 저장된 마지막 채팅 ID
      * @return
      */
     public List<MessageDto> synchronizationChatMessages(Long userId, Long chatRoomId, Long lastClientMessageId) {
@@ -199,7 +200,7 @@ public class ChatService {
     }
 
     /**
-     *
+     * userId인 사용자가 구독한 채팅방을 클라이언트-서버 사이에서 동기화
      *
      * @param userId
      * @return
@@ -225,7 +226,7 @@ public class ChatService {
      * 메시지를 DB에 저장하고 Redis에 캐시.
      * FIXME: 트랜잭션 범위 떄문에 이에 관한 생각을 조금 해봐야 한다. 현재 메시지는 단순히 백업 용도이기 때문에 중요도가 RDB보다 낮기에 RDB와 트랜잭션을 묶지 않았다.
      *
-     * @param messageDto 저장할 메시지 정보
+     * @param messageDto 저장할 메시지 정보 (Id와 timestamp가 저장된 상태)
      */
     @Transactional
     public void saveMessages(MessageDto messageDto) {
@@ -239,8 +240,6 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(messageDto.chatRoomId())
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
          */
-
-        // TODO: ID와 timestamp도 같이 생성해줘야 한다.
 
         String redisKey = "chat:room:" + messageDto.chatRoomId() + ":message";
         redisTemplate.opsForList().leftPush(redisKey, messageDto);
@@ -424,18 +423,30 @@ public class ChatService {
      */
     public PublicChatRoomsDetailResponseDto getPublicChatRooms(int page, String age, Integer minAmount, Integer maxAmount, String job) {
 
-        // 필터에 맞는 채팅방을 한 페이지를 조회한다.
-        Pageable pageable = PageRequest.of(page, CHATROOM_PAGING_SIZE); // 한 페이지 당 최대 30개를 가져온다.
+        List<ChatRoom> chatRoomList = null;
 
         AgeGroup ageEnum = (age != null) ? AgeGroup.valueOf(age) : null; // 연령대 타입 변환
         Job jobEnum = (job != null) ? Job.valueOf(job.toUpperCase()) : null; // 직업 타입 변환
 
         // null 값이면 필터링에서 무시합니다.
         // 최소 금액이 null 값이면 0원으로, 최대 금액이 null 값이면 2147483647 로 변환해서 필터링합니다.
-        Page<ChatRoom> chatRoomPage = chatRoomRepository.findAllWithPagination(ageEnum, minAmount, maxAmount, jobEnum, pageable);
-        List<ChatRoom> chatRoomList = chatRoomPage.getContent();
+        // page 값이 0일 때만 사용합니다. (추천순 정렬)
+        Page<ChatRoom> chatRoomPageOrder = chatRoomRepository.findAllWithPagination(ageEnum, minAmount, maxAmount, jobEnum, PageRequest.of(0, CHATROOM_PAGING_SIZE));
+        List<Long> chatRoomIds = chatRoomPageOrder.getContent().stream()
+                .map(chatRoom -> chatRoom.getId())
+                .toList();
 
-        // TODO: 정렬 기준 추가
+        System.out.println("chatRoomList Size: " + chatRoomIds.size());
+
+        if (page == 0) {
+            chatRoomList = chatRoomPageOrder.getContent();
+        } else if (page > 0) {
+
+            Pageable pageable = PageRequest.of(page - 1, CHATROOM_PAGING_SIZE); // 한 페이지 당 최대 20개를 가져온다.
+            Page<ChatRoom> chatRoomPageRandom = chatRoomRepository.findRandomByIdNotIn(chatRoomIds, pageable);
+            chatRoomList = chatRoomPageRandom.getContent();
+        }
+
         return PublicChatRoomsDetailResponseDto.builder()
                 .publicChatRoomDetailDtos(chatRoomList.stream()
                         .map(chatRoom -> PublicChatRoomsDetailResponseDto.PublicChatRoomDetailDto.of(chatRoom))
