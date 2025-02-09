@@ -540,4 +540,43 @@ public class ChatService {
         // S3에 파일 업로드 및 URL 반환
         return amazonS3Manager.uploadFile(keyName, file);
     }
+
+
+    // 채팅방 방장이 맞는지 확인하고 수정
+    @Transactional
+    public Long updateChatRoom(Long userId, Long chatRoomId, ChatRoomDetailRequestDto.ChatRoomUpdateDTO updateDTO) {
+        // 유저 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 채팅방 찾기
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 해당 유저가 방장인지 확인
+        ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 방장일 경우 내용 수정
+        if (chatRoomMembership.getIsHost()){
+            // 비밀번호 - 빈칸이나 null로 작성하였을 때
+            if (updateDTO.getChatRoomPassword() == null || updateDTO.getChatRoomPassword().isEmpty()) {
+                chatRoom.setPassword(null);
+            } else {
+                chatRoom.setPassword(updateDTO.getChatRoomPassword());
+            }
+            chatRoom.setPassword(updateDTO.getChatRoomPassword());
+            chatRoom.setTitle(updateDTO.getChatRoomName());
+            chatRoom.setDailySpendingGoalFilter(updateDTO.getChatRoomSpendingAmountGoal());
+            chatRoom.setMaxParticipants(updateDTO.getChatRoomMaxUserCount());
+        } else {
+            // 방장이 아닌데 채팅방 내용을 수정하려고 할 때 에러 발생하도록
+            new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NO_PERMISSION);
+        }
+
+        // 수정 내용 저장
+         chatRoomRepository.save(chatRoom);
+
+        return chatRoom.getId();
+    }
 }
