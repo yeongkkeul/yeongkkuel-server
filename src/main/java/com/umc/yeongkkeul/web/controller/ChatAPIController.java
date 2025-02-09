@@ -202,7 +202,7 @@ public class ChatAPIController {
      * @return 필터링에 맞는 모든 그룹 채팅방을 조회합니다.
      */
     @Operation(summary = "채팅방 둘러보기", description = "필터에 맞는 모든 채팅방을 페이징 단위로 조회합니다.")
-    @GetMapping("/expore")
+    @GetMapping("/explore")
     public ResponseEntity<PublicChatRoomsDetailResponseDto> getPublicChatRooms(
             @RequestParam(required = false) String age,
             @RequestParam(required = false) Integer minAmount,
