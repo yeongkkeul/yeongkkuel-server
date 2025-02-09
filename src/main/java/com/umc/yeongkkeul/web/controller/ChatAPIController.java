@@ -91,18 +91,6 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(chatService.createChatRoom(userId, chatRoomDetailRequestDto));
     }
 
-    // FIXME: 해당 API를 쓸지 생각해보자. STOMP로 보내줘도 됨.
-    /*
-    @PostMapping("/{chatRoomId}")
-    @Operation(summary = "채팅방 가입", description = "그룹 채팅방을 가입합니다.")
-    public ResponseEntity<Long> joinChatRoom(@PathVariable Long chatRoomId) {
-
-        Long userId = toId(getCurrentUserId());
-
-        return ResponseEntity.ok().body(chatService.joinChatRoom(userId, chatRoomId));
-    }
-     */
-
     @PostMapping("/{chatRoomId}/validate")
     @Operation(summary = "채팅방 패스워드 확인", description = "그룹 채팅방을 가입 할 때 사용하는 패스워드를 사용합니다. 채팅방 정보 조회의 isPassword를 통해 패스워드 여부를 확인")
     public ApiResponse<Boolean> validateChatRoomPassword(@PathVariable Long chatRoomId, @RequestBody ChatRoomJoinPasswordRequestDto chatRoomJoinPasswordRequestDto) {
@@ -185,7 +173,6 @@ public class ChatAPIController {
     }
 
     // FIXME: ENUM 상수 값을 적적한 한글로 변환하는 로직이 필요.
-    // TODO: 정렬 기준 생각해보자
     /**
      * null 값이면 필터링에 포함하지 않습니다.
      *
