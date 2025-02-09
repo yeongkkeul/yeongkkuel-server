@@ -51,7 +51,7 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(messageDtos);
     }
 
-    @Operation(summary = "클라이언트와 서버의 메시지 동기화(조회)", description = "웹소켓이 재연결되거나 오류로 인해 메시지를 받지 못할 경우를 생각해서 특정 채팅방에 들어가면 항상 이 API를 호출합니다. 인터넷에 연결되지 않거나 다른 이유로 정상적인 응답을 받지 못하면 기존에 클라이언트에 저장되었던 정보를 화면에 유지합니다.")
+    @Operation(summary = "특정 채팅방의 메시지 동기화(조회)", description = "웹소켓이 재연결되거나 오류로 인해 메시지를 받지 못할 경우를 생각해서 특정 채팅방에 들어가면 항상 이 API를 호출합니다. 인터넷에 연결되지 않거나 다른 이유로 정상적인 응답을 받지 못하면 기존에 클라이언트에 저장되었던 정보를 화면에 유지합니다.")
     @GetMapping("/{chatRoomId}/messages")
     public ApiResponse<List<MessageDto>> synchronizationChatMessages(@PathVariable Long chatRoomId, @RequestParam("messageId") Long lastClientMessageId) {
 
@@ -69,7 +69,7 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(chatService.synchronizationChatRoomsInfo(userId));
     }
 
-    @Operation(summary = "클라이언트와 서버의 유저 정보 동기화(조회)", description = "특정 채팅방의 그룹 챌린저 정보를 가져옵니다. 순서는 나, 방장, 나머지 유저 이름순 입니다.")
+    @Operation(summary = "특정 채팅방의 유저 정보 동기화(조회)", description = "특정 채팅방의 그룹 챌린저 정보를 가져옵니다. 순서는 나, 방장, 나머지 유저 이름순 입니다.")
     @GetMapping("/{chatRoomId}/users")
     public ApiResponse<ChatRoomUserInfos> synchronizationChatRoomUserInfos(@PathVariable Long chatRoomId) {
 
