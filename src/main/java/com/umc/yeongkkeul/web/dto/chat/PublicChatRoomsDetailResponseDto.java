@@ -3,6 +3,7 @@ package com.umc.yeongkkeul.web.dto.chat;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import lombok.Builder;
 
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,11 +20,11 @@ public record PublicChatRoomsDetailResponseDto(
         String chatRoomTitle,
         String chatRoomAgeRange,
         String chatRoomJob,
-        Integer chatRoomMaxUserCount,
+        String chatRoomMaxUserCount,
         Integer chatRoomParticipationCount,
         String chatRoomThumbnail,
         String chatRoomDDay,
-        Integer chatRoomSpendingAmount,
+        String chatRoomSpendingAmount,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         Boolean isPassword
@@ -31,17 +32,20 @@ public record PublicChatRoomsDetailResponseDto(
 
         public static PublicChatRoomDetailDto of(ChatRoom chatRoom) {
 
+            DecimalFormat formatter = new DecimalFormat("#,###");
+
             String ddayStr = (chatRoom.getCreatedAt() != null) ? (Duration.between(chatRoom.getCreatedAt(), LocalDateTime.now()).toDays() + 1) + " 일째" : null;
+            Integer spendingGoalMoney = chatRoom.getDailySpendingGoalFilter();
 
             return PublicChatRoomDetailDto.builder()
                     .chatRoomId(chatRoom.getId())
                     .chatRoomTitle(chatRoom.getTitle())
                     .chatRoomAgeRange(chatRoom.getAgeGroupFilter().getAgeGroup())
                     .chatRoomJob(chatRoom.getJobFilter().getJob())
-                    .chatRoomMaxUserCount(chatRoom.getMaxParticipants())
+                    .chatRoomMaxUserCount(chatRoom.getMaxParticipants() + " 명")
                     .chatRoomParticipationCount(chatRoom.getParticipationCount())
                     .chatRoomThumbnail(chatRoom.getImageUrl())
-                    .chatRoomSpendingAmount(chatRoom.getDailySpendingGoalFilter())
+                    .chatRoomSpendingAmount(formatter.format(spendingGoalMoney) + " 원")
                     .chatRoomDDay(ddayStr)
                     .createdAt(chatRoom.getCreatedAt())
                     .updatedAt(chatRoom.getUpdatedAt())
