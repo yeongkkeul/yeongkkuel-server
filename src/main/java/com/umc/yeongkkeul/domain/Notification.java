@@ -19,7 +19,6 @@ public class Notification extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // TODO: 필요한 타입 있으면 NotificationType에서 추가하시면 됩니다.
     @Column(name = "notification_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private NotificationType notificationType;
