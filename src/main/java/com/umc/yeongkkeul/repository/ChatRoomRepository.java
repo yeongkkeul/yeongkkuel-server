@@ -17,7 +17,8 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "WHERE (:age IS NULL OR c.ageGroupFilter = :age) " +
             "AND (c.dailySpendingGoalFilter >= COALESCE(:minAmount, 0)) " +
             "AND (c.dailySpendingGoalFilter <= COALESCE(:maxAmount, 2147483647)) " +
-            "AND (:job IS NULL OR c.jobFilter = :job)")
+            "AND (:job IS NULL OR c.jobFilter = :job)" +
+            "ORDER BY c.participationCount DESC")
     Page<ChatRoom> findAllWithPagination(@Param("age") AgeGroup age,
                                          @Param("minAmount") Integer minAmount,
                                          @Param("maxAmount") Integer maxAmount,
@@ -25,6 +26,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
                                          Pageable pageable);
 
     Page<ChatRoom> findByTitleContainingOrderByParticipationCountDesc(String title, Pageable pageable);
+
+    @Query("SELECT c FROM ChatRoom c WHERE c.id NOT IN :chatRoomIds ORDER BY FUNCTION('RAND')")
+    Page<ChatRoom> findRandomByIdNotIn(@Param("chatRoomIds") List<Long> chatRoomIds, Pageable pageable);
 
     @Query("SELECT c FROM ChatRoom c WHERE c.id IN :chatRoomIds")
     List<ChatRoom> findAllByIdIn(@Param("chatRoomIds") List<Long> chatRoomIds);
