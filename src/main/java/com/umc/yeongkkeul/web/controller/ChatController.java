@@ -2,6 +2,7 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.GeneralException;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
@@ -79,15 +80,11 @@ public class ChatController {
                 .timestamp(LocalDateTime.now().toString()) // 메시지 타임스탬프
                 .build();
 
-        // FIXME: Exception 예외 처리 추가 코드가 필요
         // 사용자-채팅방 관계 테이블 저장과 가입 메시지 전송.
         try {
             chatService.joinChatRoom(enterMessageDto.senderId(), roomId, messageDto);
-        }
-        catch (AmqpException e) {
+        } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
-        } catch (Exception e) {
-            log.error("error {}.", e); return;
         }
 
         log.info("The user with senderID has entered the chat room."); // JPA 저장과 메시지 전송이 성공함.
@@ -118,8 +115,6 @@ public class ChatController {
             chatService.exitChatRoom(messageDto.senderId(), roomId, messageDto);
         } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
-        } catch (Exception e) {
-            log.error("error {}.", e); return;
         }
 
         log.info("The user with senderID has left the chat room.");
