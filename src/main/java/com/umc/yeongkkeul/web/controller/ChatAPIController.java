@@ -172,7 +172,6 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(imageUrl);
     }
 
-    // FIXME: ENUM 상수 값을 적적한 한글로 변환하는 로직이 필요.
     /**
      * null 값이면 필터링에 포함하지 않습니다.
      *
