@@ -117,6 +117,7 @@ public class ExpenseResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MonthlyExpenditureViewDTO {
+        Integer dayTargetExpenditure; // 하루 목표 지출액 추가
         Integer totalMonthExpenditure; // 한달 지출 누적액
         List<MonthExpenseDTO> selectedMonthExpenses; // 요청 받은 Month
         List<MonthExpenseDTO> previousMonthExpenses; // 요청 받은 Month - 1

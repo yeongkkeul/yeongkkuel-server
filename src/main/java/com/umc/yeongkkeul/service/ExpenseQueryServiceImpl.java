@@ -414,6 +414,7 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
         int achieveDays = calculateAchieveDays(user, thisMonthExpenditureList);
 
         return ExpenseResponseDTO.MonthlyExpenditureViewDTO.builder()
+                .dayTargetExpenditure(user.getDayTargetExpenditure())
                 .totalMonthExpenditure(thisMonthExpenditure)
                 .selectedMonthExpenses(thisMonthExpenditureList)
                 .previousMonthExpenses(lastMonthExpenditureList)
