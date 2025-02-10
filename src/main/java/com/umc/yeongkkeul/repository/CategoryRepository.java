@@ -16,4 +16,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findAllByUserId(Long userId);
 
     Optional<Category> findById(Long id);
+
+    // 유저와 이름으로 카테고리 찾기
+    Optional<Category> findByUserAndName(User user, String name);
 }

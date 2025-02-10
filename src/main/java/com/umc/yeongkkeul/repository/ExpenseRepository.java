@@ -21,4 +21,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByUserIdAndExpenseDayAtBetween(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     boolean existsByUserAndDay(User user, LocalDate currentDay);
+
+    @Query("SELECT e FROM Expense e WHERE e.user.id = :userId AND e.day = :yesterday")
+    List<Expense> findYesterdayExpenseByUserId(@Param("userId") Long userId, @Param("yesterday") LocalDate yesterday);
 }

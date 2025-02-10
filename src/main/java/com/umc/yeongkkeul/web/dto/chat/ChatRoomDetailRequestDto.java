@@ -1,6 +1,9 @@
 package com.umc.yeongkkeul.web.dto.chat;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 public record ChatRoomDetailRequestDto(
         @NotBlank String chatRoomTitle,
@@ -12,4 +15,13 @@ public record ChatRoomDetailRequestDto(
         @Size(max = 200) String chatRoomRule,
         String chatRoomImageUrl
 ) {
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChatRoomUpdateDTO{
+        @NotBlank String chatRoomName;
+        String chatRoomPassword;
+        @Max(99999999) @NotNull Integer chatRoomSpendingAmountGoal;
+        @Max(100) @Min(0) @NotNull Integer chatRoomMaxUserCount;
+    }
 }
