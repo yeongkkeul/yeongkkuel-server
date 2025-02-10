@@ -146,13 +146,19 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
             }
         }
 
-        // 하루 목표 지출액
-        int dayTargetExpenditure = user.getDayTargetExpenditure() != null ? user.getDayTargetExpenditure() : 0;
+        // 하루 목표 지출액이 null일 경우의 반환
+        if (user.getDayTargetExpenditure() == null){
+            return ExpenseResponseDTO.WeeklyExpenditureViewDTO.builder()
+                    .weekExpenditure(weekExpenditure)
+                    // .dayTargetExpenditure(dayTargetExpenditure)
+                    .expenses(expensesPerDay)
+                    .build();
+        }
 
         // 응답 반환
         return ExpenseResponseDTO.WeeklyExpenditureViewDTO.builder()
                 .weekExpenditure(weekExpenditure)
-                .dayTargetExpenditure(dayTargetExpenditure)
+                .dayTargetExpenditure(user.getDayTargetExpenditure())
                 .expenses(expensesPerDay)
                 .build();
     }
