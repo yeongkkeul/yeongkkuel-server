@@ -604,4 +604,56 @@ public class ChatService {
         List<ChatRoomMembership> chatRooms = chatRoomMembershipRepository.findAllByUserId(userId);
         return chatRooms;
     }
+
+    /**
+     * 사용자가 방장일 때, 특정 사용자를 퇴출 시키는 경우 메시지를 전송
+     * 퇴장 메시지도 RabbitMQ를 통해 해당 채팅방에 있는 모든 클라이언트로 전송.
+     *
+     * @param messageDto 전송할 메시지 정보
+     */
+    public void expelMessage(MessageDto messageDto) {
+
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+    }
+
+    @Transactional
+    public void expelChatRoom(Long userId, Long targetUserId, Long chatRoomId, MessageDto messageDto) {
+        // 현재 유저 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 퇴장시키고자 하는 유저 찾기
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 채팅방 찾기
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 해당 유저가 방장인지 확인
+        ChatRoomMembership userChatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 퇴장시키고자 하는 유저가 그룹 채팅방 유저가 맞는지 확인
+        ChatRoomMembership targetUserChatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(targetUser.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 방장만 퇴출 가능
+        if (!userChatRoomMembership.getIsHost()) {
+            throw new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NO_PERMISSION);
+        }
+
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() - 1);
+
+        // 퇴장시키는 유저의 관계 테이블 삭제
+        chatRoomMembershipRepository.delete(targetUserChatRoomMembership);
+        chatRoomRepository.save(chatRoom);
+
+        // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
+        try {
+            expelMessage(messageDto);
+        } catch (AmqpException e) {
+            throw new AmqpException("메시지 전송 실패", e); // 예외를 던져서 트랜잭션 롤백 유도
+        }
+    }
 }
