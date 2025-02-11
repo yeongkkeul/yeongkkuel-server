@@ -147,8 +147,6 @@ public class ChatController {
             chatService.expelChatRoom(messageDto.senderId(), targetUserId, roomId, messageDto);
         } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
-        } catch (Exception e) {
-            log.error("error {}.", e); return;
         }
         log.info("The user with targetUserId has been kicked out of the chat room.");
         chatService.saveMessages(expelMessageDto);

@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.service;
 
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomMembershipHandler;
@@ -580,6 +581,30 @@ public class ChatService {
         return chatRoom.getId();
     }
 
+
+    public void sendReceiptChatRoom(Expense response, Long userId){
+        List<ChatRoomMembership> chatRooms = getChatRoomMemberships(userId);
+        chatRooms.stream().map(membership -> MessageDto.builder()
+                        .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                        .chatRoomId(membership.getChatroom().getId())
+                        .senderId(userId)
+                        .messageType("RECEIPT")
+                        .content(String.valueOf(response.getId())) // 지출내역 아이디를 String으로 전환해서 넣기.
+                        .timestamp(LocalDateTime.now().toString())
+                        .build())
+                .forEach(message -> {
+                    sendMessage(message); // 메시지 전송
+                    log.info("Send a message to chat room ID: {}", message.chatRoomId());
+                    saveMessages(message); // 메시지 저장
+                });
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatRoomMembership> getChatRoomMemberships(Long userId) {
+        List<ChatRoomMembership> chatRooms = chatRoomMembershipRepository.findAllByUserId(userId);
+        return chatRooms;
+    }
+
     /**
      * 사용자가 방장일 때, 특정 사용자를 퇴출 시키는 경우 메시지를 전송
      * 퇴장 메시지도 RabbitMQ를 통해 해당 채팅방에 있는 모든 클라이언트로 전송.
@@ -590,7 +615,6 @@ public class ChatService {
 
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
     }
-
 
     @Transactional
     public void expelChatRoom(Long userId, Long targetUserId, Long chatRoomId, MessageDto messageDto) {
