@@ -126,4 +126,32 @@ public class ChatController {
         log.info("The user with senderID has left the chat room.");
         chatService.saveMessages(exitMessageDto);
     }
+    // 유저가 특정 채팅방의 방장일 때, 특정 사용자를 퇴출시키는 경우
+    @MessageMapping("chat.expel.{roomId}.{targetUserId}")
+    public void expelUser(
+            @DestinationVariable("roomId") Long roomId,
+            @DestinationVariable("targetUserId") Long targetUserId, // 퇴장시키고자 하는 특정 유저
+            MessageDto messageDto
+    ) {
+        // 유저 퇴장을 알리는 메시지 생성
+        MessageDto expelMessageDto = MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong())
+                .messageType(messageDto.messageType())
+                .content(targetUserId + "님을 채팅방에서 내보냈습니다.")
+                .chatRoomId(messageDto.chatRoomId())
+                .senderId(messageDto.senderId())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+
+        try {
+            chatService.expelChatRoom(messageDto.senderId(), targetUserId, roomId, messageDto);
+        } catch (AmqpException e) {
+            log.error("The message was not sent by AmqpException {}.", e); return;
+        } catch (Exception e) {
+            log.error("error {}.", e); return;
+        }
+        log.info("The user with targetUserId has been kicked out of the chat room.");
+        chatService.saveMessages(expelMessageDto);
+    }
+
 }
