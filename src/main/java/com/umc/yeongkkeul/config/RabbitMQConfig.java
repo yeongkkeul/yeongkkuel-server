@@ -1,10 +1,7 @@
 package com.umc.yeongkkeul.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -103,6 +100,9 @@ public class RabbitMQConfig {
         factory.setPort(RABBITMQ_PORT); // RabbitMQ 연결할 port
         factory.setVirtualHost("/"); // vhost 지정
 
+        factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);  // Publisher Confirms 활성화 - 메시지를 비동기 처리
+        factory.setPublisherReturns(true); // Publisher Returns 활성화
+
         return factory;
     }
 
@@ -115,7 +115,37 @@ public class RabbitMQConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(createConnectionFactory()); // RabbitTemplate이 사용할 연결 팩토리를 지정
         rabbitTemplate.setMessageConverter(messageConverter()); // 메시지 처리와 직렬화/역직렬화를 자동으로 처리하는 Converter 설정
 
-        // TODO: mandatory, setConfirmCallback과 같이 추가적인 예외 처리 작업이 필요하다.
+        // mandatory 설정 - true일 때, 메시지가 라우팅되지 않으면 ReturnCallback이 호출됩니다.
+        rabbitTemplate.setMandatory(true);
+
+        // RabbitTemplate에 confirm callback을 설정합니다.
+        // Publisher Confirms 기능이 활성화된 상태에서 RabbitMQ 서버가 메시지를 성공적으로 받았는지 여부를 확인할 때 사용됩니다.
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+
+            // 메시지가 성공적으로 RabbitMQ 서버에 전달되었을 때
+            if (ack) {
+                log.info("Message successfully sent to broker: {}", correlationData.getId());
+            } else {
+                // 메시지가 RabbitMQ 서버에 전달되지 못했을 때
+                log.error("Message failed to send to broker: {}, cause: {}", correlationData.getId(), cause);
+
+                // TODO: 재전송 로직이나 MessageDto의 상태를 변경하는 로직 추가
+            }
+        });
+
+        // ReturnCallback 설정 - 해당 exchange에 바인됭 queue가 없거나 routingKey가 잘못되었다면, 콜백 메서드가 실행 됩니다.
+        rabbitTemplate.setReturnsCallback(returned -> {
+
+            // 반환된 메시지 처리
+            log.error("Message could not be routed. ReplyCode: {}, ReplyText: {}, Exchange: {}, RoutingKey: {}",
+                    returned.getReplyCode(),
+                    returned.getReplyText(),
+                    returned.getExchange(),
+                    returned.getRoutingKey());
+
+            // 여기서 메시지 전송 실패 처리 로직을 구현할 수 있습니다.
+        });
+
         return rabbitTemplate;
     }
 
