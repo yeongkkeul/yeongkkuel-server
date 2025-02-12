@@ -17,7 +17,10 @@ import java.util.Date;
 @Service
 public class TokenProvider { // 현재는 userId 기반 jwt 토큰 발행 -> 추후 카카오, 구글 기반 OAuth로 변경시 수정해야함
 
-    private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24; // AccessToken의 유효시간 (24시간)
+    //private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24; // AccessToken의 유효시간 (24시간)
+
+    private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 30; // AccessToken 테스트 용도 시간 30초
+
     private static final long REFRESH_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24 * 7;  // RefreshToken의 유효시간 (7일)
     private static final long THREE_DAYS = 1000 * 60 * 60 * 24 * 3;
 
