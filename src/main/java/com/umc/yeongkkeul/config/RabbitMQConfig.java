@@ -1,13 +1,17 @@
 package com.umc.yeongkkeul.config;
 
+import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -169,18 +173,32 @@ public class RabbitMQConfig {
     }
 
     /**
-     * RabbitMQConsumer
-     * 이 기능을 통해서 메시지를 저장, 모니터링을 비동기적으로 처리 가능
+     * @RabbitListener 애노테이션이 붙은 메소드가 메시지를 비동기적으로 처리할 수 있게 해주는 리스너 컨테이너를 설정
+     * 메시지가 큐에 도착하면, SimpleRabbitListenerContainerFactory가 자동으로 리스너 컨테이너를 관리하여 메시지를 수신하고 처리
      *
      * @param connectionFactory RabbitMQ 연결 팩토리
      * @param messageConverter Json 데이터 직렬화/역직렬화
-     *//*
+     */
     @Bean
     public SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
 
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter);
+
+        factory.setPrefetchCount(100); // 한 번에 100개만 처리 가능
+
         return factory;
-    }*/
+    }
+
+    /**
+     * 이 애노테이션은 해당 메소드가 RabbitMQ 큐로부터 메시지를 비동기적으로 수신하도록 합니다.
+     * 큐 이름을 지정하여 해당 큐로부터 전달되는 메시지를 받을 수 있습니다.
+     *
+     * @param messageDto
+     */
+    @RabbitListener(queues = "chat.queue")
+    public void receiveMessage(MessageDto messageDto) {
+        log.info("Received Message: {}", messageDto);
+    }
 }
