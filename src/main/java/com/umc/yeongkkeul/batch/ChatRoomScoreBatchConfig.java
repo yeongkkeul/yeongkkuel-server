@@ -66,6 +66,12 @@ public class ChatRoomScoreBatchConfig {
             List<ChatRoomMembership> chatRoomMembershipList = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(chatRoom.getId());
 
             if (chatRoomMembershipList.size() >= 5) { // 5명 이상인 방만 점수 계산
+
+                // userScore가 null 아닌 유저만 남기기
+                chatRoomMembershipList = chatRoomMembershipList.stream()
+                        .filter(membership -> membership.getUserScore() != null)
+                        .toList();
+
                 // totalScore = 참여자들의 score 합
                 double totalScore = chatRoomMembershipList.stream()
                         .mapToDouble(ChatRoomMembership::getUserScore)
