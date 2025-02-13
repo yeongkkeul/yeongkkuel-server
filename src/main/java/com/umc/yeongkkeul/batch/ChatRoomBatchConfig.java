@@ -97,9 +97,9 @@ public class ChatRoomBatchConfig {
                 sumAmount += totalExpenditure; // 유저들의 하루 지출
             }
 
-            // 채팅방 총 참여자 수 TODO: 테스트 후 데이터 정리하고 아래 코드로 변경
-            int chatRoomUserCount = chatRoomMembershipRepository.countByChatroomId(chatRoom.getId());
-//            int chatRoomUserCount = chatRoom.getParticipationCount();
+            // 채팅방 총 참여자 수
+//            int chatRoomUserCount = chatRoomMembershipRepository.countByChatroomId(chatRoom.getId());
+            int chatRoomUserCount = chatRoom.getParticipationCount();
 
             // 지출 평균 계산
             int averageExpense = sumAmount / chatRoomUserCount;
