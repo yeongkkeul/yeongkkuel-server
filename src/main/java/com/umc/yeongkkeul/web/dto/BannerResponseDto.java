@@ -1,6 +1,8 @@
 package com.umc.yeongkkeul.web.dto;
 
 import com.umc.yeongkkeul.domain.ChatRoom;
+import com.umc.yeongkkeul.domain.enums.AgeGroup;
+import com.umc.yeongkkeul.domain.enums.Job;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -23,7 +25,7 @@ public class BannerResponseDto {
                 .avgAmount(chatRoom.getAverageExpense())
                 .age(chatRoom.getAgeGroupFilter().getAgeGroup())
                 .job(chatRoom.getJobFilter().getJob())
-                .topRate((chatRoom.getAgeGroupFilter().equals("UNDECIDED")&&chatRoom.getJobFilter().equals("UNDECIDED")) ? null : chatRoom.getRanking())
+                .topRate((chatRoom.getAgeGroupFilter()==AgeGroup.UNDECIDED && chatRoom.getJobFilter()==Job.UNDECIDED) ? null : chatRoom.getRanking())
                 .createdAt(createdAt)
                 .build();
     }
