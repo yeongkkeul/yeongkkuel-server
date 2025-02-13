@@ -15,7 +15,7 @@ public class BannerResponseDto {
     private Integer avgAmount; // 채팅방의 지출 평균
     private String age; // 나이대
     private String job; // 직업대
-    private Double topRate; // 상위 백분위
+    private Integer topRate; // 상위 백분위
     private String createdAt; // 공지 날짜
 
     public static BannerResponseDto from(ChatRoom chatRoom, String createdAt) {

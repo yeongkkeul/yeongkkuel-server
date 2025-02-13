@@ -23,7 +23,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
@@ -115,27 +114,28 @@ public class ChatRoomBatchConfig {
             com.umc.yeongkkeul.domain.enums.Job jobFilter = chatRoom.getJobFilter(); // job 필터
 
             // job, age 기준으로 필터링 (totalScore null 아닌 방만 랭킹 집계)
-            List<ChatRoom> chatRoomList = new ArrayList<>();
-            if (ageFilter != null && !"UNDECIDED".equals(ageFilter) && jobFilter != null && !"UNDECIDED".equals(jobFilter)) { // age, job 대상
+            boolean hasAgeFilter = ageFilter!=null && ageFilter!=AgeGroup.UNDECIDED;
+            boolean hasJobFilter = jobFilter!=null && jobFilter!=com.umc.yeongkkeul.domain.enums.Job.UNDECIDED;
+            List<ChatRoom> chatRoomList;
+            if (hasAgeFilter && hasJobFilter) { // age, job 대상
                 chatRoomList = chatRoomRepository.findAllByAgeGroupFilterAndJobFilterOrderByTotalScoreDesc(ageFilter, jobFilter);
-            } else if (ageFilter != null && !"UNDECIDED".equals(ageFilter) && (jobFilter == null || "UNDECIDED".equals(jobFilter))) { // age 대상
+            } else if (hasAgeFilter) { // age 대상
                 chatRoomList = chatRoomRepository.findAllByAgeGroupFilterOrderByTotalScoreDesc(ageFilter);
-            } else if (jobFilter != null && !"UNDECIDED".equals(jobFilter) && (ageFilter == null || "UNDECIDED".equals(ageFilter))) { // job 대상
+            } else if (hasJobFilter) { // job 대상
                 chatRoomList = chatRoomRepository.findAllByJobFilterOrderByTotalScoreDesc(jobFilter);
             } else { // 필터 없을 때는 전체 대상
                 chatRoomList = chatRoomRepository.findAllByOrderByTotalScoreDesc();
             }
 
             // 채팅방 백분위 계산
-            Double topRate = null; // 5명 이하일 때 null 반환 위해 null 초기화
-            int ranking = 1;
-            for (int i = 0; i < chatRoomList.size(); i++) {
-                if (chatRoomList.get(i).getId().equals(chatRoom.getId())) {
-                    ranking = i + 1;
-                    break;
-                }
-            }
-            topRate = ((double) ranking / chatRoomList.size()) * 100.0;
+            int ranking = chatRoomList.stream()
+                    .filter(c -> c.getId().equals(chatRoom.getId()))
+                    .map(chatRoomList::indexOf)
+                    .findFirst()
+                    .map(i -> i + 1) // 인덱스 1부터 시작
+                    .orElse(0);
+
+            int topRate = (int) Math.round(((double) ranking / chatRoomList.size()) * 100); // 소수점 반올림
 
             chatRoom.setRanking(topRate);
 
