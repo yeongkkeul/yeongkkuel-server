@@ -69,6 +69,18 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "total_score")
     private Double totalScore;
 
+    // 목표 달성 인원
+    @Column(name = "achieved_count")
+    private Integer achievedCount;
+
+    // 챌린저 지출 평균
+    @Column(name = "average_expense")
+    private Integer averageExpense;
+
+    // 채팅방 순위
+    @Column(name = "Ranking")
+    private Double ranking;
+
     @OneToMany(mappedBy = "chatroom", cascade = CascadeType.ALL)
     private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
 

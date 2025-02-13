@@ -26,6 +26,7 @@ public class ChatRoomQueryService {
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
     private final ExpenseRepository expenseRepository;
 
+    // TODO : 배너 api 배치를 통해 저장된 값 보여주도록 수 (배너에서는 필터 없으면 null로 / 채팅방 조회에서는 필터 없으면 전체 백분위로)
     public BannerResponseDto getChatRoomBanner(Long chatRoomId) {
 
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
