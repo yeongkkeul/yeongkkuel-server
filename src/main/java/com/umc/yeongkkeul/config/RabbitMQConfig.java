@@ -1,16 +1,17 @@
 package com.umc.yeongkkeul.config;
 
+import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -103,6 +104,9 @@ public class RabbitMQConfig {
         factory.setPort(RABBITMQ_PORT); // RabbitMQ 연결할 port
         factory.setVirtualHost("/"); // vhost 지정
 
+        factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);  // Publisher Confirms 활성화 - 메시지를 비동기 처리
+        factory.setPublisherReturns(true); // Publisher Returns 활성화
+
         return factory;
     }
 
@@ -115,7 +119,37 @@ public class RabbitMQConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(createConnectionFactory()); // RabbitTemplate이 사용할 연결 팩토리를 지정
         rabbitTemplate.setMessageConverter(messageConverter()); // 메시지 처리와 직렬화/역직렬화를 자동으로 처리하는 Converter 설정
 
-        // TODO: mandatory, setConfirmCallback과 같이 추가적인 예외 처리 작업이 필요하다.
+        // mandatory 설정 - true일 때, 메시지가 라우팅되지 않으면 ReturnCallback이 호출됩니다.
+        rabbitTemplate.setMandatory(true);
+
+        // RabbitTemplate에 confirm callback을 설정합니다.
+        // Publisher Confirms 기능이 활성화된 상태에서 RabbitMQ 서버가 메시지를 성공적으로 받았는지 여부를 확인할 때 사용됩니다.
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+
+            // 메시지가 성공적으로 RabbitMQ 서버에 전달되었을 때
+            if (ack) {
+                log.info("Message successfully sent to broker: {}", correlationData.getId());
+            } else {
+                // 메시지가 RabbitMQ 서버에 전달되지 못했을 때
+                log.error("Message failed to send to broker: {}, cause: {}", correlationData.getId(), cause);
+
+                // TODO: 재전송 로직이나 MessageDto의 상태를 변경하는 로직 추가
+            }
+        });
+
+        // ReturnCallback 설정 - 해당 exchange에 바인됭 queue가 없거나 routingKey가 잘못되었다면, 콜백 메서드가 실행 됩니다.
+        rabbitTemplate.setReturnsCallback(returned -> {
+
+            // 반환된 메시지 처리
+            log.error("Message could not be routed. ReplyCode: {}, ReplyText: {}, Exchange: {}, RoutingKey: {}",
+                    returned.getReplyCode(),
+                    returned.getReplyText(),
+                    returned.getExchange(),
+                    returned.getRoutingKey());
+
+            // 여기서 메시지 전송 실패 처리 로직을 구현할 수 있습니다.
+        });
+
         return rabbitTemplate;
     }
 
@@ -139,18 +173,32 @@ public class RabbitMQConfig {
     }
 
     /**
-     * RabbitMQConsumer
-     * 이 기능을 통해서 메시지를 저장, 모니터링을 비동기적으로 처리 가능
+     * @RabbitListener 애노테이션이 붙은 메소드가 메시지를 비동기적으로 처리할 수 있게 해주는 리스너 컨테이너를 설정
+     * 메시지가 큐에 도착하면, SimpleRabbitListenerContainerFactory가 자동으로 리스너 컨테이너를 관리하여 메시지를 수신하고 처리
      *
      * @param connectionFactory RabbitMQ 연결 팩토리
      * @param messageConverter Json 데이터 직렬화/역직렬화
-     *//*
+     */
     @Bean
     public SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
 
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter);
+
+        factory.setPrefetchCount(100); // 한 번에 100개만 처리 가능
+
         return factory;
-    }*/
+    }
+
+    /**
+     * 이 애노테이션은 해당 메소드가 RabbitMQ 큐로부터 메시지를 비동기적으로 수신하도록 합니다.
+     * 큐 이름을 지정하여 해당 큐로부터 전달되는 메시지를 받을 수 있습니다.
+     *
+     * @param messageDto
+     */
+    @RabbitListener(queues = "chat.queue")
+    public void receiveMessage(MessageDto messageDto) {
+        log.info("Received Message: {}", messageDto);
+    }
 }

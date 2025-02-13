@@ -29,6 +29,7 @@ import com.umc.yeongkkeul.web.dto.chat.ReceiptMessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ListOperations;
@@ -84,9 +85,10 @@ public class ChatService {
      */
     @Transactional
     public void sendMessage(MessageDto messageDto) {
+
         // 기존 RabbitMQ를 통한 실시간 메시지 전송 (온라인 구독자 대상) -> 온라인이면 sub 정보 남아있고, 오프라인이면 휘발돼서 상관없음
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
-        log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+        // log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
 
         // 해당 채팅방의 모든 멤버 조회 (MySQL의 membership 테이블)
         List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(messageDto.chatRoomId());
@@ -114,7 +116,7 @@ public class ChatService {
      */
     private void enterMessage(MessageDto messageDto) {
 
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
     }
 
     /**
@@ -125,7 +127,7 @@ public class ChatService {
      */
     public void exitMessage(MessageDto messageDto) {
 
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
     }
 
     /**
@@ -613,7 +615,7 @@ public class ChatService {
      */
     public void expelMessage(MessageDto messageDto) {
 
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
     }
 
     @Transactional

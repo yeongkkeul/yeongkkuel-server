@@ -9,9 +9,13 @@ import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.socket.messaging.SessionConnectEvent;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -49,7 +53,7 @@ public class ChatController {
 
         chatService.sendMessage(message); // 메시지 전송
 
-        log.info("Send a message to the group chat room with roomID");
+        log.info("Send a message to the group chat room with roomID {}", roomId);
         chatService.saveMessages(message); // 메시지 저장 TODO: 나중에 Consumer를 통해서 저장하자
     }
 
@@ -91,7 +95,7 @@ public class ChatController {
             log.error("error {}.", e); return;
         }
 
-        log.info("The user with senderID has entered the chat room."); // JPA 저장과 메시지 전송이 성공함.
+        log.info("The user with senderID {} has entered the chat room {}.", enterMessageDto.senderId(), roomId); // JPA 저장과 메시지 전송이 성공함.
         chatService.saveMessages(messageDto); // Redis에 가입 메시지 저장
     }
 
@@ -123,9 +127,10 @@ public class ChatController {
             log.error("error {}.", e); return;
         }
 
-        log.info("The user with senderID has left the chat room.");
+        log.info("The user with senderID {} has left the chat room {}.", exitMessageDto.senderId(), roomId);
         chatService.saveMessages(exitMessageDto);
     }
+
     // 유저가 특정 채팅방의 방장일 때, 특정 사용자를 퇴출시키는 경우
     @MessageMapping("chat.expel.{roomId}.{targetUserId}")
     public void expelUser(
@@ -152,4 +157,27 @@ public class ChatController {
         chatService.saveMessages(expelMessageDto);
     }
 
+    // 새로운 사용자가 웹 소켓을 연결할 때 실행됨
+    @EventListener
+    public void handleWebSocketConnectListener(SessionConnectEvent event) {
+
+        StompHeaderAccessor headerAccesor = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = headerAccesor.getSessionId();
+
+        // TODO: 로그인 정보 포함
+
+        log.info("Received a new web socket connection : {}", sessionId);
+    }
+
+    // 사용자가 웹 소켓 연결을 끊으면 실행됨
+    @EventListener
+    public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
+
+        StompHeaderAccessor headerAccesor = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = headerAccesor.getSessionId();
+
+        // TODO: 로그인 정보 포함
+
+        log.info("sessionId Disconnected : " + sessionId);
+    }
 }
