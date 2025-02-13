@@ -1,7 +1,6 @@
 package com.umc.yeongkkeul.service;
 
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
-import com.umc.yeongkkeul.apiPayload.exception.GeneralException;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
