@@ -33,9 +33,27 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("SELECT c FROM ChatRoom c WHERE c.id IN :chatRoomIds")
     List<ChatRoom> findAllByIdIn(@Param("chatRoomIds") List<Long> chatRoomIds);
 
-    List<ChatRoom> findAllByAgeGroupFilterAndJobFilterOrderByTotalScoreDesc(AgeGroup ageGroupFilter, Job jobFilter);
+    @Query("SELECT c FROM ChatRoom c JOIN c.chatRoomMembershipList m " +
+            "WHERE c.ageGroupFilter = :ageGroupFilter AND c.jobFilter = :jobFilter " +
+            "AND c.totalScore IS NOT NULL " +
+            "ORDER BY c.totalScore DESC")
+    List<ChatRoom> findAllByAgeGroupFilterAndJobFilterOrderByTotalScoreDesc(@Param("ageGroupFilter") AgeGroup ageGroupFilter,
+                                                                            @Param("jobFilter") Job jobFilter);
 
-    List<ChatRoom> findAllByAgeGroupFilterOrderByTotalScoreDesc(AgeGroup ageGroupFilter);
+    @Query("SELECT c FROM ChatRoom c JOIN c.chatRoomMembershipList m " +
+            "WHERE c.ageGroupFilter = :ageGroupFilter " +
+            "AND c.totalScore IS NOT NULL " +
+            "ORDER BY c.totalScore DESC")
+    List<ChatRoom> findAllByAgeGroupFilterOrderByTotalScoreDesc(@Param("ageGroupFilter") AgeGroup ageGroupFilter);
 
-    List<ChatRoom> findAllByJobFilterOrderByTotalScoreDesc(Job jobFilter);
+    @Query("SELECT c FROM ChatRoom c JOIN c.chatRoomMembershipList m " +
+            "WHERE c.jobFilter = :jobFilter " +
+            "AND c.totalScore IS NOT NULL " +
+            "ORDER BY c.totalScore DESC")
+    List<ChatRoom> findAllByJobFilterOrderByTotalScoreDesc(@Param("jobFilter") Job jobFilter);
+
+    @Query("SELECT c FROM ChatRoom c JOIN c.chatRoomMembershipList m " +
+            "WHERE c.totalScore IS NOT NULL " +
+            "ORDER BY c.totalScore DESC")
+    List<ChatRoom> findAllByOrderByTotalScoreDesc();
 }
