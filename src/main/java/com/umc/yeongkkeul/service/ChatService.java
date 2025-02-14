@@ -596,9 +596,23 @@ public class ChatService {
                         .build())
                 .forEach(message -> {
                     sendMessage(message); // 메시지 전송
-                    log.info("Send a message to chat room ID: {}", message.chatRoomId());
+                    log.info("Send a receipt message to chat room ID: {}", message.chatRoomId());
                     saveMessages(message); // 메시지 저장
                 });
+    }
+
+    public void sendImageChat(Long userId, Long chatRoomId, String imageUrl){
+        MessageDto message = MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                .chatRoomId(chatRoomId)
+                .senderId(userId)
+                .messageType("IMAGE")
+                .content(imageUrl)
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+        sendMessage(message); // 메시지 전송
+        log.info("Send a image message to chat room ID: {}", message.chatRoomId());
+        saveMessages(message); // 메시지 저장
     }
 
     @Transactional(readOnly = true)

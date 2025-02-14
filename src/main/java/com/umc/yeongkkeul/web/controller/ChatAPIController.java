@@ -180,13 +180,14 @@ public class ChatAPIController {
      * @return S3에 저장된 이미지 URL
      */
     @PostMapping(value = "/{chatRoomId}/images", consumes = "multipart/form-data")
-    @Operation(summary = "채팅 이미지 업로드", description = "채팅 이미지를 S3에 업로드하고 이미지 URL을 반환합니다.")
-    public ApiResponse<String> uploadChatImage(@RequestBody ImageChatRequestDTO.ImageDTO request,
+    @Operation(summary = "채팅 이미지 업로드 & 전송", description = "채팅 이미지를 S3에 업로드하고 url을 채팅으로 전송합니다.")
+    public ApiResponse<String> sendChatImage(@RequestBody ImageChatRequestDTO.ImageDTO request,
                                                @PathVariable Long chatRoomId
                                                ) {
         Long userId = toId(getCurrentUserId());
         String imageUrl = chatService.uploadChatImage(userId,chatRoomId, request.getChatPicture());
-        return ApiResponse.onSuccess(imageUrl);
+        chatService.sendImageChat(userId, chatRoomId, imageUrl);
+        return ApiResponse.onSuccess(imageUrl); // 전송된 이미지 url 리턴
     }
 
     // FIXME: ENUM 상수 값을 적적한 한글로 변환하는 로직이 필요.
