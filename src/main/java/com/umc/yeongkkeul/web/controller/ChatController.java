@@ -2,6 +2,7 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.GeneralException;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
@@ -60,7 +61,6 @@ public class ChatController {
     /**
      * 유저가 특정 채팅방(roomId)에 입장했을 때 처리.
      * "chat.enter.{roomId}" 경로로 STOMP 메시지가 전송되면 호출.
-     * FIXME: message 특성 상 로그인 한 사용자를 알기 힘드므로 보안 상의 문제가 있을 수도 있다.
      *
      * @param roomId      채팅방 ID
      * @param enterMessageDto  전송된 메시지 데이터
@@ -84,15 +84,11 @@ public class ChatController {
                 .timestamp(LocalDateTime.now().toString()) // 메시지 타임스탬프
                 .build();
 
-        // FIXME: Exception 예외 처리 추가 코드가 필요
         // 사용자-채팅방 관계 테이블 저장과 가입 메시지 전송.
         try {
             chatService.joinChatRoom(enterMessageDto.senderId(), roomId, messageDto);
-        }
-        catch (AmqpException e) {
+        } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
-        } catch (Exception e) {
-            log.error("error {}.", e); return;
         }
 
         log.info("The user with senderID {} has entered the chat room {}.", enterMessageDto.senderId(), roomId); // JPA 저장과 메시지 전송이 성공함.
@@ -123,8 +119,6 @@ public class ChatController {
             chatService.exitChatRoom(messageDto.senderId(), roomId, messageDto);
         } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
-        } catch (Exception e) {
-            log.error("error {}.", e); return;
         }
 
         log.info("The user with senderID {} has left the chat room {}.", exitMessageDto.senderId(), roomId);

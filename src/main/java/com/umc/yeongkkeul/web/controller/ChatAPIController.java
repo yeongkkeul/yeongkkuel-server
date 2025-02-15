@@ -51,14 +51,7 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(messageDtos);
     }
 
-    /**
-     *
-     *
-     * @param chatRoomId
-     * @param lastClientMessageId 클라이언트에 저장된 마지막 메시지 ID
-     * @return
-     */
-    @Operation(summary = "클라이언트와 서버의 메시지 동기화(조회)", description = "웹소켓이 재연결되거나 오류로 인해 메시지를 받지 못할 경우를 생각해서 특정 채팅방에 들어가면 항상 이 API를 호출합니다. 인터넷에 연결되지 않거나 다른 이유로 정상적인 응답을 받지 못하면 기존에 클라이언트에 저장되었던 정보를 화면에 유지합니다.")
+    @Operation(summary = "특정 채팅방의 메시지 동기화(조회)", description = "웹소켓이 재연결되거나 오류로 인해 메시지를 받지 못할 경우를 생각해서 특정 채팅방에 들어가면 항상 이 API를 호출합니다. 인터넷에 연결되지 않거나 다른 이유로 정상적인 응답을 받지 못하면 기존에 클라이언트에 저장되었던 정보를 화면에 유지합니다.")
     @GetMapping("/{chatRoomId}/messages")
     public ApiResponse<List<MessageDto>> synchronizationChatMessages(@PathVariable Long chatRoomId, @RequestParam("messageId") Long lastClientMessageId) {
 
@@ -67,12 +60,7 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(chatService.synchronizationChatMessages(userId, chatRoomId, lastClientMessageId));
     }
 
-    /**
-     *
-     *
-     * @return
-     */
-    @Operation(summary = "클라이언트와 서버의 채팅방 정보 조회", description = "웹소켓 연결이 끊어지면 클라이언트와 서버 간의 채팅방 정보가 일치 하지 않을 수 있기에 이 API를 호출해서 클라이언트가 서버의 데이터를 조회하도록 시켜줍니다.")
+    @Operation(summary = "클라이언트와 서버의 채팅방 정보 동기화(조회)", description = "웹소켓 연결이 끊어지면 클라이언트와 서버 간의 채팅방 정보가 일치 하지 않을 수 있기에 이 API를 호출해서 클라이언트가 서버의 데이터를 조회하도록 시켜줍니다.")
     @GetMapping
     public ApiResponse<List<ChatRoomInfoResponseDto>> synchronizationChatRoomsInfo() {
 
@@ -81,7 +69,14 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(chatService.synchronizationChatRoomsInfo(userId));
     }
 
-    // TODO: 웹 소켓 연결이 끊어졌다가 재연결될 경우 특정 채팅방 조회(필요하면)
+    @Operation(summary = "특정 채팅방의 유저 정보 동기화(조회)", description = "특정 채팅방의 그룹 챌린저 정보를 가져옵니다. 순서는 나, 방장, 나머지 유저 이름순 입니다.")
+    @GetMapping("/{chatRoomId}/users")
+    public ApiResponse<ChatRoomUserInfos> synchronizationChatRoomUserInfos(@PathVariable Long chatRoomId) {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(chatService.synchronizationChatRoomUsers(userId, chatRoomId));
+    }
 
     /**
      * @param chatRoomDetailRequestDto 채팅방 생성 DTO
@@ -91,22 +86,10 @@ public class ChatAPIController {
     @Operation(summary = "채팅방 생성", description = "그룹 채팅방을 생성합니다.")
     public ApiResponse<Long> createChatRoom(@RequestBody @Valid ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
 
-        Long userId = 1L; //toId(getCurrentUserId());
+        Long userId = toId(getCurrentUserId());
 
         return ApiResponse.onSuccess(chatService.createChatRoom(userId, chatRoomDetailRequestDto));
     }
-
-    // FIXME: 해당 API를 쓸지 생각해보자. STOMP로 보내줘도 됨.
-    /*
-    @PostMapping("/{chatRoomId}")
-    @Operation(summary = "채팅방 가입", description = "그룹 채팅방을 가입합니다.")
-    public ResponseEntity<Long> joinChatRoom(@PathVariable Long chatRoomId) {
-
-        Long userId = toId(getCurrentUserId());
-
-        return ResponseEntity.ok().body(chatService.joinChatRoom(userId, chatRoomId));
-    }
-     */
 
     @PostMapping("/{chatRoomId}/validate")
     @Operation(summary = "채팅방 패스워드 확인", description = "그룹 채팅방을 가입 할 때 사용하는 패스워드를 사용합니다. 채팅방 정보 조회의 isPassword를 통해 패스워드 여부를 확인")
@@ -121,6 +104,7 @@ public class ChatAPIController {
      * @param chatRoomId
      * @return 채팅방 가입을 위해 사용자에게 보여줄 채팅방 정보를 조회합니다.
      */
+    // TODO: Response 수정
     @GetMapping("/{chatRoomId}/detail")
     @Operation(summary = "채팅방 정보 조회", description = "특정 채팅방의 정보를 조회합니다.")
     public ApiResponse<ChatRoomDetailResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
@@ -190,8 +174,6 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(imageUrl); // 전송된 이미지 url 리턴
     }
 
-    // FIXME: ENUM 상수 값을 적적한 한글로 변환하는 로직이 필요.
-    // TODO: 정렬 기준 생각해보자
     /**
      * null 값이면 필터링에 포함하지 않습니다.
      *
@@ -203,7 +185,7 @@ public class ChatAPIController {
      * @return 필터링에 맞는 모든 그룹 채팅방을 조회합니다.
      */
     @Operation(summary = "채팅방 둘러보기", description = "필터에 맞는 모든 채팅방을 페이징 단위로 조회합니다.")
-    @GetMapping("/expore")
+    @GetMapping("/explore")
     public ResponseEntity<PublicChatRoomsDetailResponseDto> getPublicChatRooms(
             @RequestParam(required = false) String age,
             @RequestParam(required = false) Integer minAmount,

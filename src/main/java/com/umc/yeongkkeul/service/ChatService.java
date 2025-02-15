@@ -8,6 +8,7 @@ import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
+import com.umc.yeongkkeul.converter.UserConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
@@ -223,6 +224,37 @@ public class ChatService {
         return chatRooms.stream()
                 .map(ChatRoomInfoResponseDto::of)
                 .toList();
+    }
+
+    public ChatRoomUserInfos synchronizationChatRoomUsers(Long chatRoomId, Long userId) {
+
+        List<Long> hostUserId = new ArrayList<>();
+
+        List<ChatRoomMembership> chatRoomMemberships = chatRoomMembershipRepository.findAllByChatroomId(chatRoomId);
+        List<Long> userIds = chatRoomMemberships.stream()
+                .filter(chatRoomMembership -> {
+                    boolean isHost = chatRoomMembership.getIsHost();
+                    boolean isMe = (chatRoomMembership.getUser().getId() == userId);
+
+                    if (isHost) hostUserId.add(chatRoomMembership.getUser().getId());
+
+                    return !isHost && !isMe;
+                })
+                .map(chatRoomMembership -> chatRoomMembership.getUser().getId())
+                .toList();
+
+        // 오류가 있지 않는한 hostUser가 없을 순 없다.
+        if (hostUserId == null) throw new RuntimeException();
+
+        List<User> users = userRepository.findAllByIdInOrderByNickname(userIds);
+        User myUser = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+        User hostUser = userRepository.findById(hostUserId.get(0))
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        return ChatRoomUserInfos.builder()
+                .userInfos(UserConverter.toChatRoomUserInfos(myUser, hostUser, users))
+                .build();
     }
 
     /**
