@@ -48,12 +48,7 @@ public class UserController {
             return ApiResponse.onFailure("4000", "Email not found in Kakao account", null);
         }
 
-        TokenDto tokenDto = tokenProvider.genrateToken(email);
-
-        String jwtToken = tokenDto.getAccessToken();
-        String refreshToken = tokenDto.getRefreshToken();
-
-        SocialInfoResponseDto.KakaoInfoDTO kakaoInfoDTO = kakaoLoginService.loginUserInfo(jwtToken,refreshToken,email,name);
+        SocialInfoResponseDto.KakaoInfoDTO kakaoInfoDTO = kakaoLoginService.loginUserInfo(email,name);
 
         return ApiResponse.onSuccess(kakaoInfoDTO);
     }

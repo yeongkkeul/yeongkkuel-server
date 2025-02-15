@@ -11,9 +11,11 @@ import com.umc.yeongkkeul.domain.enums.AgeGroup;
 import com.umc.yeongkkeul.domain.enums.Job;
 import com.umc.yeongkkeul.domain.enums.UserRole;
 import com.umc.yeongkkeul.repository.UserTermsRepository;
+import com.umc.yeongkkeul.security.TokenProvider;
 import com.umc.yeongkkeul.web.dto.KakaoTokenResponseDto;
 import com.umc.yeongkkeul.repository.UserRepository;
 import com.umc.yeongkkeul.web.dto.SocialInfoResponseDto;
+import com.umc.yeongkkeul.web.dto.TokenDto;
 import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -59,6 +61,8 @@ public class KakaoLoginService {
     private UserRepository userRepository;
     @Autowired
     private UserTermsRepository userTermsRepository;
+    @Autowired
+    private TokenProvider tokenProvider;
 
     @Transactional
     public String getKakaoAccessToken(String code) {
@@ -156,11 +160,26 @@ public class KakaoLoginService {
     }
 
     //카카오 로그인 성공 기본 값 저장
-    public SocialInfoResponseDto.KakaoInfoDTO loginUserInfo(String jwtToken, String refreshToken, String email, String name){
+    public SocialInfoResponseDto.KakaoInfoDTO loginUserInfo(String email, String name){
 
         boolean isExistTerms = userTermsRepository.existsByUser_EmailAndUser_OauthType(email,"KAKAO");
 
         String redirectUrl = isExistTerms ? "/api/home" : "/api/auth/user-info";
+
+        Boolean isExistUser = userRepository.existsByEmail(email);
+        String accessToken;
+        String refreshToken;
+
+        if(isExistUser){
+            TokenDto tokenDto = tokenProvider.createAccessToken(email);
+            accessToken = tokenDto.getAccessToken();
+            refreshToken = userRepository.findByEmail(email)
+                    .get().getOauthKey();
+        }else{
+            TokenDto tokenDto = tokenProvider.genrateToken(email);
+            accessToken = tokenDto.getAccessToken();
+            refreshToken = tokenDto.getRefreshToken();
+        }
 
         //초기 사용자 값 저장(kakao 정보)
         User user = userRepository.findByOauthTypeAndEmail("KAKAO", email)
@@ -182,7 +201,7 @@ public class KakaoLoginService {
         user.setOauthKey(refreshToken);
 
         return SocialInfoResponseDto.KakaoInfoDTO.builder()
-                .accessToken(jwtToken)
+                .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .email(email)
                 .redirectUrl(redirectUrl)

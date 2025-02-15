@@ -93,13 +93,17 @@ public class TokenProvider { // 현재는 userId 기반 jwt 토큰 발행 -> 추
     }
 
     public boolean refreshTokenPeriodCheck(String token){
-        Jws<Claims> claimsJws = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
+        try {
+            Jws<Claims> claimsJws = Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
 
-        long now = (new Date()).getTime();
-        long refreshExpiredTime = claimsJws.getBody().getExpiration().getTime();
+            long now = (new Date()).getTime();
+            long refreshExpiredTime = claimsJws.getBody().getExpiration().getTime();
 
-        // 유효기간 3일 이내면 true
-        return (refreshExpiredTime - now <= THREE_DAYS);
+            // 유효기간 3일 이내면 true
+            return (refreshExpiredTime - now <= THREE_DAYS);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 
