@@ -174,6 +174,7 @@ public class KakaoLoginService {
                             .email(email)
                             .nickname(name)
                             .gender("UNDECIDED")
+                            .rewardBalance(0)
                             .build();
                     return userRepository.save(newUser);
                 });

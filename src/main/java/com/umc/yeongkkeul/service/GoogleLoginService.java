@@ -72,6 +72,7 @@ public class GoogleLoginService {
                             .email(googleInfoResponseDto.getEmail())
                             .nickname(googleInfoResponseDto.getName())
                             .gender("UNDECIDED")
+                            .rewardBalance(0)
                             .build();
                     // 새로 생성 후 DB 저장
                     return userRepository.save(newUser);
