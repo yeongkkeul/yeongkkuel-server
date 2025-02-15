@@ -158,35 +158,35 @@ public class KakaoLoginService {
     //카카오 로그인 성공 기본 값 저장
     public SocialInfoResponseDto.KakaoInfoDTO loginUserInfo(String jwtToken, String refreshToken, String email, String name){
 
-        boolean isExistUser = userRepository.existsByEmail(email);
         boolean isExistTerms = userTermsRepository.existsByUser_EmailAndUser_OauthType(email,"KAKAO");
 
         String redirectUrl = isExistTerms ? "/api/home" : "/api/auth/user-info";
 
         //초기 사용자 값 저장(kakao 정보)
-        if(!isExistUser){
-            User user = User.builder()
-                    .nickname(name)
-                    .email(email)
-                    .job(Job.UNDECIDED)
-                    .userRole(UserRole.USER)
-                    .oauthType("KAKAO")
-                    .referralCode(generateRandomCode(6))
-                    .oauthKey(refreshToken)
-                    .gender("UNDECIDED")
+        User user = userRepository.findByOauthTypeAndEmail("KAKAO", email)
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .oauthType("KAKAO")
+                            .oauthKey(refreshToken)
+                            .job(Job.UNDECIDED)
+                            .ageGroup(AgeGroup.UNDECIDED)
+                            .referralCode(generateRandomCode(6))
+                            .email(email)
+                            .nickname(name)
+                            .gender("UNDECIDED")
+                            .rewardBalance(0)
+                            .build();
+                    return userRepository.save(newUser);
+                });
 
-                    .ageGroup(AgeGroup.UNDECIDED)
-                    .rewardBalance(0)
-                    .build();
-
-            userRepository.save(user);
-        }
+        user.setOauthKey(refreshToken);
 
         return SocialInfoResponseDto.KakaoInfoDTO.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
                 .email(email)
                 .redirectUrl(redirectUrl)
+                .userId(user.getId())
                 .build();
     }
 
