@@ -30,4 +30,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByIdInOrderByNickname(List<Long> userIds);
 
     Optional<User> findByOauthTypeAndEmail(String oauthType, String email);
+
+
 }

@@ -50,9 +50,24 @@ public class GoogleLoginService {
 
         Boolean isExistTerms = userTermsRepository.existsByUser_EmailAndUser_OauthType(googleInfoResponseDto.getEmail(),"GOOGLE");
 
-        TokenDto tokenDto = tokenProvider.genrateToken(googleInfoResponseDto.getEmail());
-        String accessToken = tokenDto.getAccessToken();
-        String refreshToken = tokenDto.getRefreshToken();
+        Boolean isExistUser = userRepository.existsByEmail(googleInfoResponseDto.getEmail());
+        String accessToken;
+        String refreshToken;
+
+        if(isExistUser){
+            TokenDto tokenDto = tokenProvider.createAccessToken(googleInfoResponseDto.getEmail());
+            accessToken = tokenDto.getAccessToken();
+            refreshToken = userRepository.findByEmail(googleInfoResponseDto.getEmail())
+                    .get().getOauthKey();
+        }else{
+            TokenDto tokenDto = tokenProvider.genrateToken(googleInfoResponseDto.getEmail());
+            accessToken = tokenDto.getAccessToken();
+            refreshToken = tokenDto.getRefreshToken();
+        }
+
+
+
+        //현재 refreshToken이 DB에 있는 사용자는 accessToken 생성 혹은 둘 다 생성
 
         String redirectUrl = isExistTerms ? "/api/home" : "/api/auth/user-info";
 
