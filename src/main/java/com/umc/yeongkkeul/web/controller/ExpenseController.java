@@ -1,30 +1,43 @@
 package com.umc.yeongkkeul.web.controller;
 
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
+import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
+import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
+import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.service.ExpenseCommandService;
 import com.umc.yeongkkeul.service.ExpenseQueryServiceImpl;
 import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
 import com.umc.yeongkkeul.web.dto.ExpenseResponseDTO;
 import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
 import com.umc.yeongkkeul.web.dto.UserRequestDto;
+import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import com.umc.yeongkkeul.web.dto.chat.MessageDto;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.umc.yeongkkeul.security.FindLoginUser.getCurrentUserId;
 import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "지출 API", description = "지출 관련 API 입니다.")
 //@RequestMapping("/api/expense")
 public class ExpenseController {
     private final ExpenseCommandService expenseCommandService;
     private final ExpenseQueryServiceImpl expenseQueryServiceImpl;
+    private final ChatService chatService;
+    private final ChatRoomMembershipRepository chatRoomMembershipRepository;
 
     @PostMapping("/api/expense")
     @Operation(summary = "지출 내역 생성",description = "지출 내역을 입력합니다.")
@@ -34,6 +47,22 @@ public class ExpenseController {
         Long userId = toId(getCurrentUserId());
 
         Expense response = expenseCommandService.createExpense(userId, request);
+
+        List<ChatRoomMembership> chatRooms = chatRoomMembershipRepository.findAllByUserId(userId);
+        chatRooms.stream().map(membership -> MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                .chatRoomId(membership.getChatroom().getId())
+                .senderId(userId)
+                .messageType("RECEIPT")
+                .content(String.valueOf(response.getId())) // 지출내역 아이디를 String으로 전환해서 넣기.
+                .timestamp(LocalDateTime.now().toString())
+                .build())
+        .forEach(message -> {
+                chatService.sendMessage(message); // 메시지 전송
+                log.info("Send a message to chat room ID: {}", message.chatRoomId());
+                chatService.saveMessages(message); // 메시지 저장
+        });
+
         return ApiResponse.onSuccess(response);
     }
 
