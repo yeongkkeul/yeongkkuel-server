@@ -58,4 +58,7 @@ public class ChatRoomMembership extends BaseEntity {
 
     @Column(name = "join_message_id")
     private Long joinMessageId;
+
+    @Column(name = "yesterday_score")
+    private Double yesterdayScore = 0.0;
 }

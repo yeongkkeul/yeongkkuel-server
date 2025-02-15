@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.repository;
 
+import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,4 +32,9 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
 
     @Query("SELECT cm.user.id FROM ChatRoomMembership cm WHERE cm.chatroom.id = :chatRoomId")
     List<Long> findUserIdByChatroomId(@Param("chatRoomId") Long chatRoomId);
+
+    @Query("SELECT c FROM ChatRoomMembership c WHERE c.chatroom.id = :chatRoomId ORDER BY c.yesterdayScore DESC")
+    List<ChatRoomMembership> findByChatroomIdOrderByYesterdayScoreDesc(@Param("chatRoomId") Long chatRoomId);
+
+    Optional<ChatRoomMembership> findByChatroom_IdAndUser_Id(Long chatRoomId, Long userId);
 }
