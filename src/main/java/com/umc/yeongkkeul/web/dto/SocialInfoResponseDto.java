@@ -17,7 +17,7 @@ public class SocialInfoResponseDto {
         String refreshToken;
         String email;
         String redirectUrl;
-
+        Long userId;
     }
 
     @Builder
@@ -30,6 +30,7 @@ public class SocialInfoResponseDto {
         String refreshToken;
         String email;
         String redirectUrl;
+        Long userId;
     }
 
 

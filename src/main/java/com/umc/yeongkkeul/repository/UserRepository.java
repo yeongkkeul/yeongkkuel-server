@@ -28,4 +28,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.id IN :userIds ORDER BY u.nickname")
     List<User> findAllByIdInOrderByNickname(List<Long> userIds);
+
+    Optional<User> findByOauthTypeAndEmail(String oauthType, String email);
 }

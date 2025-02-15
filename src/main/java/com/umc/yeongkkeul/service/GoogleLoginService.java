@@ -61,26 +61,30 @@ public class GoogleLoginService {
         }
 
         // 2) DB 조회 or 가입
-        Boolean isExistUser = userRepository.existsByOauthTypeAndEmail("GOOGLE", googleInfoResponseDto.getEmail());
-        if(!isExistUser) {
-            User newUser = User.builder()
-                    .oauthType("GOOGLE")
-                    .oauthKey(refreshToken)
-                    .job(Job.UNDECIDED)
-                    .ageGroup(AgeGroup.UNDECIDED)
-                    .referralCode(generateRandomCode(6))
-                    .email(googleInfoResponseDto.getEmail())
-                    .nickname(googleInfoResponseDto.getName())
-                    .gender("UNDECIDED")
-                    .build();
-            userRepository.save(newUser);
-        }
+        User user = userRepository.findByOauthTypeAndEmail("GOOGLE", googleInfoResponseDto.getEmail())
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .oauthType("GOOGLE")
+                            .oauthKey(refreshToken)
+                            .job(Job.UNDECIDED)
+                            .ageGroup(AgeGroup.UNDECIDED)
+                            .referralCode(generateRandomCode(6))
+                            .email(googleInfoResponseDto.getEmail())
+                            .nickname(googleInfoResponseDto.getName())
+                            .gender("UNDECIDED")
+                            .build();
+                    // 새로 생성 후 DB 저장
+                    return userRepository.save(newUser);
+                });
+
+        user.setOauthKey(refreshToken); // 여기서 리프레시 토큰을 저장해야, 로그인시 보내는 리프레시 토큰과 일치 여부 로직 수행가능.
 
         return SocialInfoResponseDto.GoogleInfoDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .email(googleInfoResponseDto.getEmail())
                 .redirectUrl(redirectUrl)
+                .userId(user.getId()) // 여기 추가
                 .build();
 
     }
