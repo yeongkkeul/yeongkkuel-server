@@ -37,7 +37,6 @@ public class ExpenseController {
     private final ExpenseCommandService expenseCommandService;
     private final ExpenseQueryServiceImpl expenseQueryServiceImpl;
     private final ChatService chatService;
-    private final ChatRoomMembershipRepository chatRoomMembershipRepository;
 
     @PostMapping("/api/expense")
     @Operation(summary = "지출 내역 생성",description = "지출 내역을 입력합니다.")
@@ -48,20 +47,7 @@ public class ExpenseController {
 
         Expense response = expenseCommandService.createExpense(userId, request);
 
-        List<ChatRoomMembership> chatRooms = chatRoomMembershipRepository.findAllByUserId(userId);
-        chatRooms.stream().map(membership -> MessageDto.builder()
-                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
-                .chatRoomId(membership.getChatroom().getId())
-                .senderId(userId)
-                .messageType("RECEIPT")
-                .content(String.valueOf(response.getId())) // 지출내역 아이디를 String으로 전환해서 넣기.
-                .timestamp(LocalDateTime.now().toString())
-                .build())
-        .forEach(message -> {
-                chatService.sendMessage(message); // 메시지 전송
-                log.info("Send a message to chat room ID: {}", message.chatRoomId());
-                chatService.saveMessages(message); // 메시지 저장
-        });
+        chatService.sendReceiptChatRoom(response, userId);
 
         return ApiResponse.onSuccess(response);
     }

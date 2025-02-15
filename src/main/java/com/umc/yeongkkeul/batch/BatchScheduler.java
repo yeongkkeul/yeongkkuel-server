@@ -15,6 +15,7 @@ public class BatchScheduler {
     private final JobLauncher jobLauncher;
     private final Job updateUserScoreJob;
     private final Job updateChatRoomScoreJob;
+    private final Job updateChatRoomJob;
 
     @Scheduled(cron = "0 0 0 * * ?")
     public void runBatchJobs() throws Exception{
@@ -24,5 +25,6 @@ public class BatchScheduler {
 
         jobLauncher.run(updateUserScoreJob,jobParameters);
         jobLauncher.run(updateChatRoomScoreJob,jobParameters);
+        jobLauncher.run(updateChatRoomJob,jobParameters);
     }
 }

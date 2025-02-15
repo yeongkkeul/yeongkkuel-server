@@ -2,6 +2,7 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.GeneralException;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.web.dto.chat.EnterMessageDto;
@@ -9,9 +10,13 @@ import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.socket.messaging.SessionConnectEvent;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -49,14 +54,13 @@ public class ChatController {
 
         chatService.sendMessage(message); // 메시지 전송
 
-        log.info("Send a message to the group chat room with roomID");
+        log.info("Send a message to the group chat room with roomID {}", roomId);
         chatService.saveMessages(message); // 메시지 저장 TODO: 나중에 Consumer를 통해서 저장하자
     }
 
     /**
      * 유저가 특정 채팅방(roomId)에 입장했을 때 처리.
      * "chat.enter.{roomId}" 경로로 STOMP 메시지가 전송되면 호출.
-     * FIXME: message 특성 상 로그인 한 사용자를 알기 힘드므로 보안 상의 문제가 있을 수도 있다.
      *
      * @param roomId      채팅방 ID
      * @param enterMessageDto  전송된 메시지 데이터
@@ -80,18 +84,14 @@ public class ChatController {
                 .timestamp(LocalDateTime.now().toString()) // 메시지 타임스탬프
                 .build();
 
-        // FIXME: Exception 예외 처리 추가 코드가 필요
         // 사용자-채팅방 관계 테이블 저장과 가입 메시지 전송.
         try {
             chatService.joinChatRoom(enterMessageDto.senderId(), roomId, messageDto);
-        }
-        catch (AmqpException e) {
+        } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
-        } catch (Exception e) {
-            log.error("error {}.", e); return;
         }
 
-        log.info("The user with senderID has entered the chat room."); // JPA 저장과 메시지 전송이 성공함.
+        log.info("The user with senderID {} has entered the chat room {}.", enterMessageDto.senderId(), roomId); // JPA 저장과 메시지 전송이 성공함.
         chatService.saveMessages(messageDto); // Redis에 가입 메시지 저장
     }
 
@@ -119,11 +119,59 @@ public class ChatController {
             chatService.exitChatRoom(messageDto.senderId(), roomId, messageDto);
         } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
-        } catch (Exception e) {
-            log.error("error {}.", e); return;
         }
 
-        log.info("The user with senderID has left the chat room.");
+        log.info("The user with senderID {} has left the chat room {}.", exitMessageDto.senderId(), roomId);
         chatService.saveMessages(exitMessageDto);
+    }
+
+    // 유저가 특정 채팅방의 방장일 때, 특정 사용자를 퇴출시키는 경우
+    @MessageMapping("chat.expel.{roomId}.{targetUserId}")
+    public void expelUser(
+            @DestinationVariable("roomId") Long roomId,
+            @DestinationVariable("targetUserId") Long targetUserId, // 퇴장시키고자 하는 특정 유저
+            MessageDto messageDto
+    ) {
+        // 유저 퇴장을 알리는 메시지 생성
+        MessageDto expelMessageDto = MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong())
+                .messageType(messageDto.messageType())
+                .content(targetUserId + "님을 채팅방에서 내보냈습니다.")
+                .chatRoomId(messageDto.chatRoomId())
+                .senderId(messageDto.senderId())
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+
+        try {
+            chatService.expelChatRoom(messageDto.senderId(), targetUserId, roomId, messageDto);
+        } catch (AmqpException e) {
+            log.error("The message was not sent by AmqpException {}.", e); return;
+        }
+        log.info("The user with targetUserId has been kicked out of the chat room.");
+        chatService.saveMessages(expelMessageDto);
+    }
+
+    // 새로운 사용자가 웹 소켓을 연결할 때 실행됨
+    @EventListener
+    public void handleWebSocketConnectListener(SessionConnectEvent event) {
+
+        StompHeaderAccessor headerAccesor = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = headerAccesor.getSessionId();
+
+        // TODO: 로그인 정보 포함
+
+        log.info("Received a new web socket connection : {}", sessionId);
+    }
+
+    // 사용자가 웹 소켓 연결을 끊으면 실행됨
+    @EventListener
+    public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
+
+        StompHeaderAccessor headerAccesor = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = headerAccesor.getSessionId();
+
+        // TODO: 로그인 정보 포함
+
+        log.info("sessionId Disconnected : " + sessionId);
     }
 }

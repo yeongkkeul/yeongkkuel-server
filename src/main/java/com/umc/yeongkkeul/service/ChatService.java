@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.service;
 
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomMembershipHandler;
@@ -7,6 +8,7 @@ import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
+import com.umc.yeongkkeul.converter.UserConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
@@ -28,6 +30,7 @@ import com.umc.yeongkkeul.web.dto.chat.ReceiptMessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ListOperations;
@@ -83,9 +86,10 @@ public class ChatService {
      */
     @Transactional
     public void sendMessage(MessageDto messageDto) {
+
         // 기존 RabbitMQ를 통한 실시간 메시지 전송 (온라인 구독자 대상) -> 온라인이면 sub 정보 남아있고, 오프라인이면 휘발돼서 상관없음
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
-        log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+        // log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
 
         // 해당 채팅방의 모든 멤버 조회 (MySQL의 membership 테이블)
         List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(messageDto.chatRoomId());
@@ -113,7 +117,7 @@ public class ChatService {
      */
     private void enterMessage(MessageDto messageDto) {
 
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
     }
 
     /**
@@ -124,7 +128,7 @@ public class ChatService {
      */
     public void exitMessage(MessageDto messageDto) {
 
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
     }
 
     /**
@@ -220,6 +224,37 @@ public class ChatService {
         return chatRooms.stream()
                 .map(ChatRoomInfoResponseDto::of)
                 .toList();
+    }
+
+    public ChatRoomUserInfos synchronizationChatRoomUsers(Long chatRoomId, Long userId) {
+
+        List<Long> hostUserId = new ArrayList<>();
+
+        List<ChatRoomMembership> chatRoomMemberships = chatRoomMembershipRepository.findAllByChatroomId(chatRoomId);
+        List<Long> userIds = chatRoomMemberships.stream()
+                .filter(chatRoomMembership -> {
+                    boolean isHost = chatRoomMembership.getIsHost();
+                    boolean isMe = (chatRoomMembership.getUser().getId() == userId);
+
+                    if (isHost) hostUserId.add(chatRoomMembership.getUser().getId());
+
+                    return !isHost && !isMe;
+                })
+                .map(chatRoomMembership -> chatRoomMembership.getUser().getId())
+                .toList();
+
+        // 오류가 있지 않는한 hostUser가 없을 순 없다.
+        if (hostUserId == null) throw new RuntimeException();
+
+        List<User> users = userRepository.findAllByIdInOrderByNickname(userIds);
+        User myUser = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+        User hostUser = userRepository.findById(hostUserId.get(0))
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        return ChatRoomUserInfos.builder()
+                .userInfos(UserConverter.toChatRoomUserInfos(myUser, hostUser, users))
+                .build();
     }
 
     /**
@@ -578,5 +613,95 @@ public class ChatService {
          chatRoomRepository.save(chatRoom);
 
         return chatRoom.getId();
+    }
+
+
+    public void sendReceiptChatRoom(Expense response, Long userId){
+        List<ChatRoomMembership> chatRooms = getChatRoomMemberships(userId);
+        chatRooms.stream().map(membership -> MessageDto.builder()
+                        .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                        .chatRoomId(membership.getChatroom().getId())
+                        .senderId(userId)
+                        .messageType("RECEIPT")
+                        .content(String.valueOf(response.getId())) // 지출내역 아이디를 String으로 전환해서 넣기.
+                        .timestamp(LocalDateTime.now().toString())
+                        .build())
+                .forEach(message -> {
+                    sendMessage(message); // 메시지 전송
+                    log.info("Send a receipt message to chat room ID: {}", message.chatRoomId());
+                    saveMessages(message); // 메시지 저장
+                });
+    }
+
+    public void sendImageChat(Long userId, Long chatRoomId, String imageUrl){
+        MessageDto message = MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                .chatRoomId(chatRoomId)
+                .senderId(userId)
+                .messageType("IMAGE")
+                .content(imageUrl)
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+        sendMessage(message); // 메시지 전송
+        log.info("Send a image message to chat room ID: {}", message.chatRoomId());
+        saveMessages(message); // 메시지 저장
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatRoomMembership> getChatRoomMemberships(Long userId) {
+        List<ChatRoomMembership> chatRooms = chatRoomMembershipRepository.findAllByUserId(userId);
+        return chatRooms;
+    }
+
+    /**
+     * 사용자가 방장일 때, 특정 사용자를 퇴출 시키는 경우 메시지를 전송
+     * 퇴장 메시지도 RabbitMQ를 통해 해당 채팅방에 있는 모든 클라이언트로 전송.
+     *
+     * @param messageDto 전송할 메시지 정보
+     */
+    public void expelMessage(MessageDto messageDto) {
+
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+    }
+
+    @Transactional
+    public void expelChatRoom(Long userId, Long targetUserId, Long chatRoomId, MessageDto messageDto) {
+        // 현재 유저 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 퇴장시키고자 하는 유저 찾기
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 채팅방 찾기
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 해당 유저가 방장인지 확인
+        ChatRoomMembership userChatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 퇴장시키고자 하는 유저가 그룹 채팅방 유저가 맞는지 확인
+        ChatRoomMembership targetUserChatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(targetUser.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 방장만 퇴출 가능
+        if (!userChatRoomMembership.getIsHost()) {
+            throw new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NO_PERMISSION);
+        }
+
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() - 1);
+
+        // 퇴장시키는 유저의 관계 테이블 삭제
+        chatRoomMembershipRepository.delete(targetUserChatRoomMembership);
+        chatRoomRepository.save(chatRoom);
+
+        // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
+        try {
+            expelMessage(messageDto);
+        } catch (AmqpException e) {
+            throw new AmqpException("메시지 전송 실패", e); // 예외를 던져서 트랜잭션 롤백 유도
+        }
     }
 }
