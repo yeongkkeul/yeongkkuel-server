@@ -6,12 +6,10 @@ import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.CategoryConverter;
 import com.umc.yeongkkeul.converter.PurchaseConverter;
 import com.umc.yeongkkeul.domain.Category;
+import com.umc.yeongkkeul.domain.Reward;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.Purchase;
-import com.umc.yeongkkeul.repository.CategoryRepository;
-import com.umc.yeongkkeul.repository.ExpenseRepository;
-import com.umc.yeongkkeul.repository.PurchaseRepository;
-import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.repository.*;
 import com.umc.yeongkkeul.web.dto.CategoryResponseDTO;
 import com.umc.yeongkkeul.web.dto.ExpenseResponseDTO;
 import com.umc.yeongkkeul.web.dto.HomeResponseDTO;
@@ -21,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +33,7 @@ public class HomeQueryServiceImpl implements HomeQueryService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final PurchaseRepository purchaseRepository;
+    private final RewardRepository rewardRepository;
 
     @Override
     public HomeResponseDTO.HomeViewDTO viewHome(Long userId){
@@ -66,6 +66,28 @@ public class HomeQueryServiceImpl implements HomeQueryService {
                 .mySkin(usingItemList)
                 .today(today)
                 .categories(categoryList)
+                .build();
+    }
+
+    @Override
+    public HomeResponseDTO.YesterdayRewardViewDTO yesterdayRewardView(Long userId){
+        // 어제 날짜
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+
+        // 유저 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 어제 획득한 리워드 목록 가져오기
+        List<Reward> rewards = rewardRepository.findByUserIdAndCreatedAtDate(userId, yesterday);
+
+        // 어제 획득한 리워드 총합 계산
+        Integer yesterdayReward = rewards.stream()
+                .mapToInt(Reward::getAmount)
+                .sum();
+
+        return HomeResponseDTO.YesterdayRewardViewDTO.builder()
+                .yesterdayReward(yesterdayReward)
                 .build();
     }
 }
