@@ -25,7 +25,7 @@ public class ExpenseConverter {
                 .content(request.getContent())
                 .amount(amount)
                 .isNoSpending(request.getIsExpense())
-                .imageUrl(request.getExpenseImg())
+                // .imageUrl(request.getExpenseImg())
                 .isSend(request.getSendChatRoom())
                 .user(user)
                 .category(category)

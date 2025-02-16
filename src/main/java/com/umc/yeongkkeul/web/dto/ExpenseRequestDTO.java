@@ -28,7 +28,7 @@ public class ExpenseRequestDTO {
         @NotNull(message = "무지출 여부 작성은 필수입니다.")
         private Boolean isExpense;
 
-        private String expenseImg;
+        // private String expenseImg;
 
         @NotNull(message = "채팅방 전송 여부 작성은 필수입니다.")
         private Boolean sendChatRoom;
@@ -51,7 +51,7 @@ public class ExpenseRequestDTO {
         @NotNull(message = "지출 금액 작성은 필수입니다.")
         private Integer amount;
 
-        private String expenseImg;
+        // private String expenseImg;
     }
 
 
