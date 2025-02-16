@@ -16,15 +16,21 @@ import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "홈 API", description = "홈 화면 API 입니다.")
-//@RequestMapping("/api/home")
 public class HomeController {
 
     private final HomeQueryServiceImpl homeQueryServiceImpl;
 
     @Operation(summary = "홈 화면 조회")
-     @GetMapping("/api/home")
+    @GetMapping("/api/home")
     public ApiResponse<HomeResponseDTO.HomeViewDTO> home() {
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(homeQueryServiceImpl.viewHome(userId));
+    }
+
+    @Operation(summary = "전날 획득한 리워드 총합 조회")
+    @GetMapping("/api/reward/yesterday")
+    public ApiResponse<HomeResponseDTO.YesterdayRewardViewDTO> yesterday_reward() {
+        Long userId = toId(getCurrentUserId());
+        return ApiResponse.onSuccess(homeQueryServiceImpl.yesterdayRewardView(userId));
     }
 }
