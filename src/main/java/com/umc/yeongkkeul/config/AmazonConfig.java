@@ -44,6 +44,9 @@ public class AmazonConfig {
     @Value("${cloud.aws.path.chat}")
     private String chatPath;
 
+    @Value("expense_image")
+    private String expenseImagePath;
+
     @PostConstruct
     public void init() {
         this.awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
