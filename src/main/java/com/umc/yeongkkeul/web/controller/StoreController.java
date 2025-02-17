@@ -33,7 +33,7 @@ public class StoreController {
         return ApiResponse.onSuccess(storeViewDto);
     }
 
-    @PostMapping
+    @PostMapping("/shop/purchase")
     @Operation(summary = "스킨 구매", description="스킨 요청 값은 requestBody를 통해 확인")
     public ApiResponse<String> buySkin(@RequestBody PurchaseRequestDto.PurchaseItemInfo purchaseItemInfo){
         String email = FindLoginUser.getCurrentUserId();
@@ -43,7 +43,7 @@ public class StoreController {
         return ApiResponse.onSuccess("스킨 구매 성공");
     }
 
-    @PutMapping
+    @PutMapping("/shop/myskin")
     @Operation(summary = "스킨 착용 저장", description="착용한 스킨의 구매 내역 id(list 형태로 보내주시면 됩니다.)")
     public ApiResponse<String> wearSkin(@RequestBody PurchaseRequestDto.WearingItemDto wearingItemDto){
         String email = FindLoginUser.getCurrentUserId();

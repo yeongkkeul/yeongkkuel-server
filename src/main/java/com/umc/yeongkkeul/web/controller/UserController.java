@@ -114,7 +114,7 @@ public class UserController {
     }
 
     @Operation(summary = "토큰 재발급")
-    @PostMapping("/reissue")
+    @PostMapping("/auth/reissue")
     public ResponseEntity<TokenDto> reissue(@RequestBody TokenRequestDto tokenRequestDto) {
         return ResponseEntity.ok(authCommandService.reissue(tokenRequestDto));
     }
