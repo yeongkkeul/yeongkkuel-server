@@ -418,7 +418,7 @@ public class ChatService {
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
         // 채팅방의 비밀번호가 없다면
-        if (chatRoom.getPassword() == null) return false;
+        if (chatRoom.getPassword() == null) return true;
 
         // 채팅방의 비밀번호가 있는데 사용자가 입력한 비밀번호가 없다면
         if (password == null) return false;
