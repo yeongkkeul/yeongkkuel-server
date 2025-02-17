@@ -68,6 +68,11 @@ public class ChatService {
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
     private final AmazonS3Manager amazonS3Manager;
 
+    // 기본 이미지 URL
+    private final String DEFAULT_CHATROOM_IMAGE =
+            "https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/chatroom-profile/basic-profile.png";
+
+
     private final String READ_STATUS_KEY_PREFIX = "read:message:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
 
@@ -290,7 +295,7 @@ public class ChatService {
      */
     // TODO: Long으로 반환해줄지 Json으로 반환할지 고민 해봐야 된다.
     @Transactional
-    public Long createChatRoom(Long userId, ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
+    public Long createChatRoom(Long userId, ChatRoomDetailRequestDto chatRoomDetailRequestDto, MultipartFile chatRoomImage) {
 
         // 방장
         User user = userRepository.findById(userId)
@@ -298,6 +303,19 @@ public class ChatService {
 
         // 채팅방 저장
         ChatRoom chatRoom = ChatRoomConverter.toChatRoomEntity(chatRoomDetailRequestDto);
+
+        // 이미지 업로드 및 url 셋팅 -> 이미지 업로드 or 기본 이미지
+        if (chatRoomImage == null || chatRoomImage.isEmpty()) {
+            // 파일이 없으므로 기본이미지 URL
+            chatRoom.setImageUrl(DEFAULT_CHATROOM_IMAGE);
+        } else {
+            // 파일이 있으면 업로드 후 URL 세팅
+            String uploadedUrl = uploadChatRoomImage(chatRoomImage);
+            chatRoom.setImageUrl(uploadedUrl);
+        }
+
+
+
         ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
 
         // 채팅방-사용자 저장
@@ -307,6 +325,26 @@ public class ChatService {
         chatRoomMembershipRepository.save(chatRoomMembership);
 
         return savedChatRoom.getId();
+    }
+
+    /**
+     * S3 업로드 유틸 매소드
+     * - UUID 엔티티 만들고 DB에 저장
+     * - S3 keyName 생성 후 업로드
+     * - 업로드 완료된 URL 리턴
+     */
+    private String uploadChatRoomImage(MultipartFile file) {
+        // 1. 새 Uuid 엔티티 생성
+        Uuid uuidEntity = Uuid.builder()
+                .uuid(UUID.randomUUID().toString())
+                .build();
+        uuidRepository.save(uuidEntity);
+
+        // 2. S3 keyName 생성 (chatroom-profile 폴더 저장)
+        String keyName = amazonS3Manager.generateChatroomProfileKeyName(uuidEntity);
+
+        // 3. S3 업로드
+        return amazonS3Manager.uploadFile(keyName, file);
     }
 
     /**
