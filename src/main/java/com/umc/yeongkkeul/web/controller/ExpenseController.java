@@ -80,7 +80,7 @@ public class ExpenseController {
         return ApiResponse.onSuccess(null);
     }
 
-    @PostMapping("/api/expenditures/target")
+    @PostMapping("/api/expense/target")
     @Operation(summary = "유저의 하루 목표 지출액 설정",description = "하루 목표 지출액을 설정합니다.")
     public ApiResponse<User> getUserDayTargetExpenditure(
             @RequestBody @Valid ExpenseRequestDTO.DayTargetExpenditureRequestDto request
@@ -92,14 +92,14 @@ public class ExpenseController {
         return ApiResponse.onSuccess(response);
     }
 
-    @GetMapping("/api/expenditures/day")
+    @GetMapping("/api/expense/day")
     @Operation(summary = "일간 - 하루 목표 지출액 조회", description = "유저의 하루 목표 지출액을 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.DayTargetExpenditureViewDTO> DayTargetExpenditureView(){
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(expenseQueryServiceImpl.DayTargetExpenditureViewDTO(userId));
     }
 
-    @GetMapping("/api/expenditures/{year}/{month}/{day}")
+    @GetMapping("/api/expense/{year}/{month}/{day}")
     @Operation(summary = "카테고리별 지출 기록 조회", description = "카테고리별 지출 기록을 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.CategoryListExpenditureViewDTO> CategoryExpenseListView(
             @PathVariable("year") Integer year,
@@ -110,21 +110,21 @@ public class ExpenseController {
         return ApiResponse.onSuccess(expenseQueryServiceImpl.CategoryExpenseListView(userId, year, month, day));
     }
 
-    @GetMapping("/api/expenditures/week/expenses")
+    @GetMapping("/api/expense/week/expenses")
     @Operation(summary = "주간 - 지출액 조회", description = "해당 주간의 지출액을 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.WeeklyExpenditureViewDTO> WeeklyExpenseListView(){
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(expenseQueryServiceImpl.getWeeklyExpenditure(userId));
     }
 
-    @GetMapping("/api/expenditures/week/average")
+    @GetMapping("/api/expense/week/average")
     @Operation(summary = "주간 - 주간 통계 조회", description = "해당 주간의 통계를 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO> WeeklyAverageExpenditureView(){
         Long userId = toId(getCurrentUserId());
         return ApiResponse.onSuccess(expenseQueryServiceImpl.weeklyAverageExpenditureViewDTO(userId));
     }
 
-    @GetMapping("/api/expenditures/month/{year}/{month}")
+    @GetMapping("/api/expense/month/{year}/{month}")
     @Operation(summary = "월간 - 달력 조회", description = "해당 월의 지출 내역을 조회합니다.")
     public ApiResponse<ExpenseResponseDTO.MonthlyExpenditureViewDTO> MonthlyExpenditureView(
             @PathVariable("year") Integer year,
