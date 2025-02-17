@@ -8,6 +8,7 @@ import com.umc.yeongkkeul.service.StoreService;
 import com.umc.yeongkkeul.web.dto.PurchaseRequestDto;
 import com.umc.yeongkkeul.web.dto.StoreResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/api")
+@Tag(name = "상점 API", description = "상점 관련 API 입니다.")
 public class StoreController {
 
     @Autowired
