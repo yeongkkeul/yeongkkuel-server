@@ -18,7 +18,7 @@ import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "MyPage", description = "마이페이지 관련 API")
+@Tag(name = "마이페이지 API", description = "마이페이지 관련 API 입니다.")
 public class MyPageController {
 
     private final MyPageCommandService myPageCommandService;

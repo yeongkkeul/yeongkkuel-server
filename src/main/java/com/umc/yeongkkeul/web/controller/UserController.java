@@ -9,6 +9,7 @@ import com.umc.yeongkkeul.service.KakaoLoginService;
 import com.umc.yeongkkeul.service.UserService;
 import com.umc.yeongkkeul.web.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/api")
+@Tag(name = "사용자 API", description = "사용자 관련 API 입니다.")
 public class UserController {
 
     @Autowired
