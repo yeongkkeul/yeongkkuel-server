@@ -12,8 +12,7 @@ public record ChatRoomDetailRequestDto(
         @Max(100) @Min(0) @NotNull Integer chatRoomMaxUserCount,
         String chatRoomAgeRange,
         String chatRoomJob,
-        @Size(max = 200) String chatRoomRule,
-        String chatRoomImageUrl
+        @Size(max = 200) String chatRoomRule
 ) {
     @Getter
     @NoArgsConstructor

@@ -82,13 +82,16 @@ public class ChatAPIController {
      * @param chatRoomDetailRequestDto 채팅방 생성 DTO
      * @return 로그인한 사용자를 방장으로 한 채팅방을 생성하고 채팅방의 ID를 반환합니다.
      */
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "채팅방 생성", description = "그룹 채팅방을 생성합니다.")
-    public ApiResponse<Long> createChatRoom(@RequestBody @Valid ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
+    public ApiResponse<Long> createChatRoom(
+            @RequestPart("chatRoomInfo") @Valid ChatRoomDetailRequestDto chatRoomDetailRequestDto,
+            @RequestPart(value = "chatRoomImage", required = false) MultipartFile chatRoomImage
+    ) { // 컨트롤러에서 @RequestPart를 통해 이미지와 채팅방 정보를 둘다 받기. 이미지는 필수 아님
 
         Long userId = toId(getCurrentUserId());
-
-        return ApiResponse.onSuccess(chatService.createChatRoom(userId, chatRoomDetailRequestDto));
+        Long newChatRoomId = chatService.createChatRoom(userId, chatRoomDetailRequestDto, chatRoomImage);
+        return ApiResponse.onSuccess(newChatRoomId);
     }
 
     @PostMapping("/{chatRoomId}/validate")
