@@ -19,4 +19,12 @@ public class HomeResponseDTO {
         LocalDate today;
         List<CategoryResponseDTO.CategoryViewListWithHomeDTO> categories;
     }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class YesterdayRewardViewDTO{
+        Integer yesterdayReward;
+    }
 }

@@ -19,8 +19,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,29 +40,31 @@ public class ExpenseController {
     private final ExpenseQueryServiceImpl expenseQueryServiceImpl;
     private final ChatService chatService;
 
-    @PostMapping("/api/expense")
-    @Operation(summary = "지출 내역 생성",description = "지출 내역을 입력합니다.")
+    @PostMapping(value = "/api/expense", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @Operation(summary = "지출 내역 생성",description = "multipart/form-data로 보내야 합니다.")
     public ApiResponse<Expense> createExpense(
-            @RequestBody @Valid ExpenseRequestDTO.ExpenseDTO request
+            @RequestPart @Valid ExpenseRequestDTO.ExpenseDTO request,
+            @RequestPart(required = false) MultipartFile expenseImage
     ) {
         Long userId = toId(getCurrentUserId());
 
-        Expense response = expenseCommandService.createExpense(userId, request);
+        Expense response = expenseCommandService.createExpense(userId, request, expenseImage);
 
         chatService.sendReceiptChatRoom(response, userId);
 
         return ApiResponse.onSuccess(response);
     }
 
-    @PatchMapping("/api/expense/{expenseId}")
-    @Operation(summary = "지출 내역 수정",description = "지출 수정 내역을 입력합니다.")
+    @PatchMapping(value = "/api/expense/{expenseId}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @Operation(summary = "지출 내역 수정",description = "multipart/form-data로 보내야 합니다.")
     public ApiResponse<Expense> updateExpense(
-            @PathVariable("expenseId") Long expenseId,
-            @RequestBody @Valid ExpenseRequestDTO.ExpenseUpdateDTO request
+            @RequestPart("expenseId") Long expenseId,
+            @RequestPart @Valid ExpenseRequestDTO.ExpenseUpdateDTO request,
+            @RequestPart(required = false) MultipartFile expenseImage
     ){
         Long userId = toId(getCurrentUserId());
 
-        Expense response = expenseCommandService.updateExpense(userId, expenseId, request);
+        Expense response = expenseCommandService.updateExpense(userId, expenseId, request, expenseImage);
         return ApiResponse.onSuccess(response);
     }
 
