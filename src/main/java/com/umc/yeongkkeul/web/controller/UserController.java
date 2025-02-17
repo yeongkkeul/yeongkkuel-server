@@ -91,7 +91,7 @@ public class UserController {
 
 
     //추천인 코드 입력
-    @PostMapping("/api/recommend-code")
+    @PostMapping("/recommend-code")
     @Operation(summary="추천인 코드 입력",description = "추천인 코드 입력(없는 코드인 경우 에러 발생), 일치(true),null인 경우(false)")
     public ApiResponse<?> checkReferralCode(@RequestBody UserRequestDto.ReferralCodeRequestDto referralCodeRequestDto){
         String email = FindLoginUser.getCurrentUserId();
