@@ -55,7 +55,7 @@ public class MyPageController {
     }
 
     @Operation(summary = "하루 목표 지출액 수정")
-    @PatchMapping("/api/expenditures/target")
+    @PatchMapping("/api/expense/target")
     public ApiResponse<MyPageInfoResponseDto> updateDayTargetExpenditure(@RequestBody ExpenseRequestDTO.DayTargetExpenditureRequestDto dayTargetExpenditureRequestDto) {
         Long userId = toId(getCurrentUserId());
 
