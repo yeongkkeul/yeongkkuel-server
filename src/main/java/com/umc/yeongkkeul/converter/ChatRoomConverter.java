@@ -8,6 +8,7 @@ import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailResponseDto;
 
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -57,19 +58,32 @@ public class ChatRoomConverter {
      */
     public static ChatRoomDetailResponseDto toChatRoomDetailResponseDto(ChatRoom chatRoom, String lastActivity) {
 
+        DecimalFormat df = new DecimalFormat("#,###");
         LocalDateTime localDateTime = LocalDateTime.now();
         String daysStr = (chatRoom.getCreatedAt() != null) ? (Duration.between(chatRoom.getCreatedAt(), localDateTime).toDays() + 1) + "일 째" : null;
+        String groupRanking = "NON";
 
-        // TODO: 엔티티 수정 후 추가
+        if (chatRoom.getAgeGroupFilter() != null && chatRoom.getJobFilter() != null) {
+            groupRanking = chatRoom.getAgeGroupFilter() + " " + chatRoom.getJobFilter() + " 상위 " + chatRoom.getRanking() + "%";
+        } else if (chatRoom.getAchievedCount() == null && chatRoom.getJobFilter() != null) {
+            groupRanking = chatRoom.getJobFilter() + " 상위 " + chatRoom.getRanking() + "%";
+        } else if (chatRoom.getAgeGroupFilter() != null && chatRoom.getJobFilter() == null) {
+            groupRanking = chatRoom.getAgeGroupFilter() + " 상위 " + chatRoom.getRanking() + "%";
+        } else {
+            groupRanking = "전체 상위 " + chatRoom.getRanking() + "%";
+        }
+
         return ChatRoomDetailResponseDto.builder()
                 .chatRoomTitle(chatRoom.getTitle())
                 .lastActivity(lastActivity)
                 .chatRoomAgeRange(String.valueOf(chatRoom.getAgeGroupFilter()))
                 .chatRoomJob(String.valueOf(chatRoom.getJobFilter()))
                 .createdDaysElapsed(daysStr)
-                .participationCount(chatRoom.getParticipationCount())
-                .chatRoomMaxUserCount(chatRoom.getMaxParticipants())
-                .chatRoomSpendingAmountGoal(chatRoom.getDailySpendingGoalFilter())
+                .chatRoomChallenger(chatRoom.getParticipationCount() + "/" + chatRoom.getMaxParticipants())
+                .chatRoomSpendingAmountGoal(df.format(chatRoom.getDailySpendingGoalFilter()) + "원")
+                .chatRoomAchievedCount(chatRoom.getAchievedCount() + "/" + chatRoom.getParticipationCount())
+                .chatRoomAverageExpense(df.format(chatRoom.getAverageExpense()) + "원")
+                .chatRoomChallengerGroupRanking(groupRanking)
                 .chatRoomImageUrl(chatRoom.getImageUrl())
                 .isPassword(chatRoom.getPassword() != null)
                 .build();
