@@ -105,7 +105,8 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
             throw new ExpenseHandler(ErrorStatus.EXPENSE_AMOUNT_ERROR);
         }
 
-        String expenseImageUrl = null;
+        String expenseImageUrl = expense.getImageUrl();
+
         if (expenseImage != null && !expenseImage.isEmpty()) {
             Uuid uuidEntity = Uuid.builder().uuid(UUID.randomUUID().toString()).build();
             uuidRepository.save(uuidEntity);
