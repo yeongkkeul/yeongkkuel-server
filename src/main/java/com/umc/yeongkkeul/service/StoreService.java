@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +48,7 @@ public class StoreService {
                 .map(purchase -> PurchaseResponseDTO.PurchaseViewDTO.builder()
                         .itemName(purchase.getItem().getName())
                         .itemType(purchase.getItem().getType().toString())
-                        .imgUrl(purchase.getItem().getImgUrl())
+                        .imgUrl(purchase.getImageUrl())
                         .build())
                 .collect(Collectors.toList());
 
@@ -59,7 +61,7 @@ public class StoreService {
                             .id(purchase.getId())
                             .itemName(purchase.getItem().getName())
                             .price(purchase.getItem().getPrice())
-                            .itemImg(purchase.getItem().getImageUrl())
+                            .itemImg(purchase.getItem().getImgUrl())
                             .build())
                     .collect(Collectors.toList());
 
@@ -106,6 +108,12 @@ public class StoreService {
             throw new GeneralException(ErrorStatus._NOT_ENOUGH_REWARD);
         }
 
+        String itemName = purchaseItemInfo.getItemName();
+
+        String baseUrl = "https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/store-item/";
+        String encodedItemName = URLEncoder.encode(itemName, StandardCharsets.UTF_8);
+        String imageUrl = baseUrl + "Home" + encodedItemName + ".png";  // 최종 URL
+
 
         if(!processionItem){
 
@@ -116,6 +124,7 @@ public class StoreService {
                     .usedReward(item.getPrice())
                     .isUsed(false)
                     .type(purchaseItemInfo.getItemType())
+                    .imageUrl(imageUrl)
                     .build();
 
             purchaseRepository.save(purchase);

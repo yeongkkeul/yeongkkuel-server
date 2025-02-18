@@ -46,6 +46,9 @@ public class Purchase extends BaseEntity {
     @Column(name = "is_used", nullable = false)
     private Boolean isUsed;
 
+    @Column(name ="image_url")
+    private String imageUrl;
+
     public Item getItem() {
         return item;
     }
