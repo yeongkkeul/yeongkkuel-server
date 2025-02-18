@@ -36,9 +36,9 @@ public class ExpenseResponseDTO {
         private Long expenseId;
         private String expenseName;
         private Integer expenseAmount;
-        private Boolean imgExist;
+        private String imgExist; // Boolean -> String으로 변경
 
-        public ExpenseListView2DTO(Long expenseId, String expenseName, Integer expenseAmount, Boolean imgExist) {
+        public ExpenseListView2DTO(Long expenseId, String expenseName, Integer expenseAmount, String imgExist) {
             this.expenseId = expenseId;
             this.expenseName = expenseName;
             this.expenseAmount = expenseAmount;

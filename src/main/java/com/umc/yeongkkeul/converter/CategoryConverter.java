@@ -96,7 +96,7 @@ public class CategoryConverter {
                                         expense.getId(),
                                         expense.getContent(),
                                         expense.getAmount(),
-                                        isImageExist(expense.getImageUrl())))
+                                        expense.getImageUrl())) // imgUrl 반환
                                 .collect(Collectors.toList())
                 ))
                 .collect(Collectors.toList());
