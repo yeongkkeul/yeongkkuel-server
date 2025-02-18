@@ -46,6 +46,7 @@ public class Category extends BaseEntity {
     @JsonManagedReference
     private User user;
 
+    @Builder.Default
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     private List<Expense> expenseList = new ArrayList<>();
 
