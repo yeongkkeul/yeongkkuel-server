@@ -13,7 +13,7 @@ public class PurchaseConverter {
         return new PurchaseResponseDTO.PurchaseViewDTO(
                 purchase.getItem() != null ? purchase.getItem().getName() : "No Item - Name",
                 purchase.getItem() != null ? purchase.getItem().getType().name() : "No Item - Type",
-                purchase.getItem() != null ? purchase.getItem().getImgUrl() : "No Item - ImgUrl"
+                purchase.getItem() != null ? purchase.getImageUrl() : "No Item - ImgUrl"
         );
     }
 
