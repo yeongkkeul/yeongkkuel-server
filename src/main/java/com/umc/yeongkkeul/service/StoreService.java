@@ -22,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -108,11 +110,21 @@ public class StoreService {
             throw new GeneralException(ErrorStatus._NOT_ENOUGH_REWARD);
         }
 
-        String itemName = purchaseItemInfo.getItemName();
+        String itemName = item.getImgUrl();
 
+
+        String regex = "Store(.*?)\\.png";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(itemName);
+
+        String itemNameWithoutEncoding = "";
+        if (matcher.find()) {
+            itemNameWithoutEncoding = matcher.group(1); // Extract the matched part without encoding
+        }
+
+        // Construct the final image URL with the item name without encoding
         String baseUrl = "https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/store-item/";
-        String encodedItemName = URLEncoder.encode(itemName, StandardCharsets.UTF_8);
-        String imageUrl = baseUrl + "Home" + encodedItemName + ".png";  // 최종 URL
+        String imageUrl = baseUrl + "Home" + itemNameWithoutEncoding + ".png";  // 최종 URL
 
 
         if(!processionItem){
