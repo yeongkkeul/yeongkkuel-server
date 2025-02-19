@@ -134,8 +134,8 @@ public class ChatAPIController {
      */
     @GetMapping("/{chatRoomId}/images")
     @Operation(summary = "채팅방 이미지 조회", description = "채팅방에 업로드된 이미지 목록(이미지 URL)을 조회합니다.")
-    public ApiResponse<List<String>> getChatRoomImages(@PathVariable Long chatRoomId) {
-        List<String> imageUrls = chatService.getChatRoomImageUrls(chatRoomId);
+    public ApiResponse<List<ImageChatResponseDTO>> getChatRoomImages(@PathVariable Long chatRoomId) {
+        List<ImageChatResponseDTO> imageUrls = chatService.getChatRoomImageUrls(chatRoomId);
         return ApiResponse.onSuccess(imageUrls);
     }
 
