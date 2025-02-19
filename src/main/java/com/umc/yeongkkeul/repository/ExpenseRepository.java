@@ -37,5 +37,17 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
           AND e.day = :day
           AND e.isNoSpending = true
     """)
-    boolean existsNoSpendingExpense(Long userId, Long categoryId, LocalDate day);
+
+    boolean existsNoSpendingExpense(
+            @Param("userId") Long userId,
+            @Param("categoryId") Long categoryId,
+            @Param("day") LocalDate day
+    );
+
+    // 특정 유저가 특정 날짜에 가지고 있는 지출(무지출 포함) 레코드 개수를 반환
+    long countByUserAndDay(User user, LocalDate day);
+
+    // 오늘 하루에 해당되는 지출
+    @Query("SELECT e FROM Expense e WHERE e.user.id = :userId AND e.day = :today")
+    List<Expense> findByUserIdAndExpenseDayToday(@Param("userId") Long userId, @Param("today") LocalDate today);
 }
