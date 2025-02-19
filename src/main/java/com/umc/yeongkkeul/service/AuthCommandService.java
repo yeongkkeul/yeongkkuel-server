@@ -24,10 +24,6 @@ public class AuthCommandService {
 
 
     public TokenDto reissue(TokenRequestDto tokenRequestDto) {
-        // Refresh Token 검증
-        if (!tokenProvider.validateToken(tokenRequestDto.getRefreshToken())) {
-            throw new GeneralException(ErrorStatus._INVALID_REFRESH_TOKEN);
-        }
 
         // Access Token 에서 user 정보 가져오기
         String email = tokenProvider.getEmailFromToken(tokenRequestDto.getAccessToken());
@@ -42,15 +38,15 @@ public class AuthCommandService {
         }
 
         // 새로운 AccessToken 생성
-        TokenDto tokenDto;
-        if (tokenProvider.refreshTokenPeriodCheck(user.getOauthKey())) {
-            // RefreshToken의 유효기간이 3일 이하면, Access,Refresh Token 모두 재발급
+        TokenDto tokenDto =  null;
+        if (!tokenProvider.refreshTokenPeriodCheck(user.getOauthKey())) {
+            // RefreshToken의 유효기간이 3일 이상이면, Access,Refresh Token 모두 재발급
             tokenDto = tokenProvider.genrateToken(email);
 
             user.setOauthKey(tokenDto.getRefreshToken()); // 새로운 RefreshToken 저장
             userRepository.save(user);
-        } else {
-            // Refresh Token의 유효기간이 3일 이상이면, AccessToken만 재발급
+        } else if(tokenProvider.validateToken(tokenRequestDto.getAccessToken())) {
+            //AccessToken만 생성하여 발급
             tokenDto = tokenProvider.createAccessToken(email);
         }
 

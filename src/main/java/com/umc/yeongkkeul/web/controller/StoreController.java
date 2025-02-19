@@ -8,6 +8,7 @@ import com.umc.yeongkkeul.service.StoreService;
 import com.umc.yeongkkeul.web.dto.PurchaseRequestDto;
 import com.umc.yeongkkeul.web.dto.StoreResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/api")
+@Tag(name = "상점 API", description = "상점 관련 API 입니다.")
 public class StoreController {
 
     @Autowired
@@ -33,7 +35,7 @@ public class StoreController {
         return ApiResponse.onSuccess(storeViewDto);
     }
 
-    @PostMapping
+    @PostMapping("/shop/purchase")
     @Operation(summary = "스킨 구매", description="스킨 요청 값은 requestBody를 통해 확인")
     public ApiResponse<String> buySkin(@RequestBody PurchaseRequestDto.PurchaseItemInfo purchaseItemInfo){
         String email = FindLoginUser.getCurrentUserId();
@@ -43,7 +45,7 @@ public class StoreController {
         return ApiResponse.onSuccess("스킨 구매 성공");
     }
 
-    @PutMapping
+    @PutMapping("/shop/myskin")
     @Operation(summary = "스킨 착용 저장", description="착용한 스킨의 구매 내역 id(list 형태로 보내주시면 됩니다.)")
     public ApiResponse<String> wearSkin(@RequestBody PurchaseRequestDto.WearingItemDto wearingItemDto){
         String email = FindLoginUser.getCurrentUserId();

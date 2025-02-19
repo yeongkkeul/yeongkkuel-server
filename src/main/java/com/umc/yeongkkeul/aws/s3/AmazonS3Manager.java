@@ -78,6 +78,10 @@ public class AmazonS3Manager{
         return amazonConfig.getChatPath() + '/' + uuid.getUuid();
     }
 
+    public String generateExpenseImageKeyName(Uuid uuid) {
+        return amazonConfig.getExpenseImagePath() + '/' + uuid.getUuid();
+    }
+
     /**
      * S3 다운로드 결과를 담는 DTO. -> 추후 다운로드 api에서 메타데이터 넣는 활용 필요해서 추가함
      */

@@ -1,5 +1,7 @@
 package com.umc.yeongkkeul.repository;
 
+import com.umc.yeongkkeul.domain.ChatRoom;
+import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,10 +22,22 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
 
     List<ChatRoomMembership> findAllByUserId(Long userId);
 
-    List<ChatRoomMembership> findAllByChatroomId(Long roomId);
+    List<ChatRoomMembership> findAllByChatroomId(Long chatRoomId);
 
     @Modifying
     @Transactional
     @Query("DELETE FROM ChatRoomMembership c WHERE c.chatroom.id = :chatRoomId")
     void deleteChatRoomMemberships(@Param("chatRoomId") Long chatRoomId);
+
+    int countByChatroomId(Long chatRoomId);
+
+    @Query("SELECT cm.user.id FROM ChatRoomMembership cm WHERE cm.chatroom.id = :chatRoomId")
+    List<Long> findUserIdByChatroomId(@Param("chatRoomId") Long chatRoomId);
+
+    @Query("SELECT c FROM ChatRoomMembership c WHERE c.chatroom.id = :chatRoomId ORDER BY c.yesterdayScore DESC")
+    List<ChatRoomMembership> findByChatroomIdOrderByYesterdayScoreDesc(@Param("chatRoomId") Long chatRoomId);
+
+    Optional<ChatRoomMembership> findByChatroom_IdAndUser_Id(Long chatRoomId, Long userId);
+
+    List<ChatRoomMembership> findAllByChatroom(ChatRoom chatRoom);
 }

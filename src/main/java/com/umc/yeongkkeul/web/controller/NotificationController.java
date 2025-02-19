@@ -77,4 +77,13 @@ public class NotificationController {
 
         return ApiResponse.onSuccess(notificationService.raedNotification(notificationId));
     }
+
+    @PostMapping("/read-all")
+    @Operation(summary = "모든 알림 읽음", description = "모든 알림의 상태를 읽음으로 변환하는 API입니다.")
+    public ApiResponse<Integer> readAllNotifications() {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(notificationService.raedAllNotifications(userId));
+    }
 }

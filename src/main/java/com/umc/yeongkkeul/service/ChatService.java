@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.service;
 
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.ChatRoomMembershipHandler;
@@ -7,6 +8,7 @@ import com.umc.yeongkkeul.apiPayload.exception.handler.ExpenseHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.converter.ChatRoomConverter;
+import com.umc.yeongkkeul.converter.UserConverter;
 import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
@@ -18,6 +20,7 @@ import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
 import com.umc.yeongkkeul.repository.ChatRoomRepository;
 import com.umc.yeongkkeul.repository.ExpenseRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.socket.SocketConnectionTracker;
 import com.umc.yeongkkeul.web.dto.chat.*;
 import com.umc.yeongkkeul.repository.*;
 import com.umc.yeongkkeul.web.dto.chat.ChatRoomDetailRequestDto;
@@ -27,6 +30,7 @@ import com.umc.yeongkkeul.web.dto.chat.ReceiptMessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ListOperations;
@@ -64,24 +68,50 @@ public class ChatService {
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
     private final AmazonS3Manager amazonS3Manager;
 
-    private final String READ_STATUS_KEY_PREFIX = "read:room:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
+    // 기본 이미지 URL
+    private final String DEFAULT_CHATROOM_IMAGE =
+            "https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/chatroom-profile/basic-profile.png";
+
+
+    private final String READ_STATUS_KEY_PREFIX = "read:message:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
 
     @Value("${rabbitmq.exchange.name}")
     private String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
 
-    private final int CHATROOM_PAGING_SIZE = 30; // 한 페이지 당 최대 30개를 조회
+    // SocketConnectionTracker를 추가하여 온라인 상태를 확인할 수 있도록 함
+    private final SocketConnectionTracker socketConnectionTracker;
+
+    private final int CHATROOM_PAGING_SIZE = 20; // 한 페이지 당 최대 30개를 조회
 
     /**
-     * 메시지를 특정 채팅방으로 전송.
-     * RabbitMQ를 사용하여 메시지를 해당 채팅방에 있는 모든 클라이언트로 전송.
-     *
-     * @param messageDto 전송할 메시지 정보
+     * 오픈 채팅방에 메시지를 전송하는 통합 메서드.
+     * 온라인 수신자에게는 RabbitMQ를 통해 실시간 전송,
+     * 오프라인 수신자에게는 FCM 푸시 분기 처리를 수행합니다.
      */
+    @Transactional
     public void sendMessage(MessageDto messageDto) {
 
-        // RabbitMQ의 특정 채팅방으로 메시지 전송
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        // 기존 RabbitMQ를 통한 실시간 메시지 전송 (온라인 구독자 대상) -> 온라인이면 sub 정보 남아있고, 오프라인이면 휘발돼서 상관없음
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+        // log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
+
+        // 해당 채팅방의 모든 멤버 조회 (MySQL의 membership 테이블)
+        List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(messageDto.chatRoomId());
+
+        // 각 멤버에 대해 온라인 상태 확인 후, 오프라인이면 FCM 푸시 처리 (현재는 로그 출력)
+        for (ChatRoomMembership membership : memberships) {
+            Long memberId = membership.getUser().getId();
+            // 보낸 사용자는 제외
+            if (memberId.equals(messageDto.senderId())) {
+                continue;
+            }
+
+            if (!socketConnectionTracker.isUserOnline(memberId)) {
+                // 오프라인인 경우 FCM 푸시 분기 처리 (아직 FCM 로직은 구현하지 않음)
+                log.info("User {} is offline. FCM push triggered.", memberId); // TODO: FCM 전송 로직 추가
+            }
+        }
     }
 
     /**
@@ -92,7 +122,7 @@ public class ChatService {
      */
     private void enterMessage(MessageDto messageDto) {
 
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
     }
 
     /**
@@ -103,7 +133,7 @@ public class ChatService {
      */
     public void exitMessage(MessageDto messageDto) {
 
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
     }
 
     /**
@@ -124,10 +154,11 @@ public class ChatService {
 
     /**
      * 특정 채팅방 클라이언트에서 업데이트 되지 않은 메시지를 조회
+     * chatRoomId르 가진 채팅방의 클라이언트의 채팅 내역과 서버의 채팅 내역을 동기화 하는 메서드
      *
      * @param userId
      * @param chatRoomId
-     * @param lastClientMessageId
+     * @param lastClientMessageId 클라이언트에 저장된 마지막 채팅 ID
      * @return
      */
     public List<MessageDto> synchronizationChatMessages(Long userId, Long chatRoomId, Long lastClientMessageId) {
@@ -178,7 +209,7 @@ public class ChatService {
     }
 
     /**
-     *
+     * userId인 사용자가 구독한 채팅방을 클라이언트-서버 사이에서 동기화
      *
      * @param userId
      * @return
@@ -198,6 +229,37 @@ public class ChatService {
         return chatRooms.stream()
                 .map(ChatRoomInfoResponseDto::of)
                 .toList();
+    }
+
+    public ChatRoomUserInfos synchronizationChatRoomUsers(Long chatRoomId, Long userId) {
+
+        List<Long> hostUserId = new ArrayList<>();
+
+        List<ChatRoomMembership> chatRoomMemberships = chatRoomMembershipRepository.findAllByChatroomId(chatRoomId);
+        List<Long> userIds = chatRoomMemberships.stream()
+                .filter(chatRoomMembership -> {
+                    boolean isHost = chatRoomMembership.getIsHost();
+                    boolean isMe = (chatRoomMembership.getUser().getId() == userId);
+
+                    if (isHost) hostUserId.add(chatRoomMembership.getUser().getId());
+
+                    return !isHost && !isMe;
+                })
+                .map(chatRoomMembership -> chatRoomMembership.getUser().getId())
+                .toList();
+
+        // 오류가 있지 않는한 hostUser가 없을 순 없다.
+        if (hostUserId == null) throw new RuntimeException();
+
+        List<User> users = userRepository.findAllByIdInOrderByNickname(userIds);
+        User myUser = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+        User hostUser = userRepository.findById(hostUserId.get(0))
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        return ChatRoomUserInfos.builder()
+                .userInfos(UserConverter.toChatRoomUserInfos(myUser, hostUser, users))
+                .build();
     }
 
     @Transactional
@@ -244,7 +306,7 @@ public class ChatService {
      * 메시지를 DB에 저장하고 Redis에 캐시.
      * FIXME: 트랜잭션 범위 떄문에 이에 관한 생각을 조금 해봐야 한다. 현재 메시지는 단순히 백업 용도이기 때문에 중요도가 RDB보다 낮기에 RDB와 트랜잭션을 묶지 않았다.
      *
-     * @param messageDto 저장할 메시지 정보
+     * @param messageDto 저장할 메시지 정보 (Id와 timestamp가 저장된 상태)
      */
     @Transactional
     public void saveMessages(MessageDto messageDto) {
@@ -259,8 +321,6 @@ public class ChatService {
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
          */
 
-        // TODO: ID와 timestamp도 같이 생성해줘야 한다.
-
         String redisKey = "chat:room:" + messageDto.chatRoomId() + ":message";
         redisTemplate.opsForList().leftPush(redisKey, messageDto);
     }
@@ -273,9 +333,8 @@ public class ChatService {
      * @param chatRoomDetailRequestDto 채팅방 생성 DTO
      * @return 생성한 채팅방의 ID를 반환합니다.
      */
-    // TODO: Long으로 반환해줄지 Json으로 반환할지 고민 해봐야 된다.
     @Transactional
-    public Long createChatRoom(Long userId, ChatRoomDetailRequestDto chatRoomDetailRequestDto) {
+    public Long createChatRoom(Long userId, ChatRoomDetailRequestDto chatRoomDetailRequestDto, MultipartFile chatRoomImage) {
 
         // 방장
         User user = userRepository.findById(userId)
@@ -283,6 +342,17 @@ public class ChatService {
 
         // 채팅방 저장
         ChatRoom chatRoom = ChatRoomConverter.toChatRoomEntity(chatRoomDetailRequestDto);
+
+        // 이미지 업로드 및 url 셋팅 -> 이미지 업로드 or 기본 이미지
+        if (chatRoomImage == null || chatRoomImage.isEmpty()) {
+            // 파일이 없으므로 기본이미지 URL
+            chatRoom.setImageUrl(DEFAULT_CHATROOM_IMAGE);
+        } else {
+            // 파일이 있으면 업로드 후 URL 세팅
+            String uploadedUrl = uploadChatRoomImage(chatRoomImage);
+            chatRoom.setImageUrl(uploadedUrl);
+        }
+
         ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
 
         // 채팅방-사용자 저장
@@ -292,6 +362,26 @@ public class ChatService {
         chatRoomMembershipRepository.save(chatRoomMembership);
 
         return savedChatRoom.getId();
+    }
+
+    /**
+     * S3 업로드 유틸 매소드
+     * - UUID 엔티티 만들고 DB에 저장
+     * - S3 keyName 생성 후 업로드
+     * - 업로드 완료된 URL 리턴
+     */
+    private String uploadChatRoomImage(MultipartFile file) {
+        // 1. 새 Uuid 엔티티 생성
+        Uuid uuidEntity = Uuid.builder()
+                .uuid(UUID.randomUUID().toString())
+                .build();
+        uuidRepository.save(uuidEntity);
+
+        // 2. S3 keyName 생성 (chatroom-profile 폴더 저장)
+        String keyName = amazonS3Manager.generateChatroomProfileKeyName(uuidEntity);
+
+        // 3. S3 업로드
+        return amazonS3Manager.uploadFile(keyName, file);
     }
 
     /**
@@ -403,7 +493,7 @@ public class ChatService {
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
         // 채팅방의 비밀번호가 없다면
-        if (chatRoom.getPassword() == null) return false;
+        if (chatRoom.getPassword() == null) return true;
 
         // 채팅방의 비밀번호가 있는데 사용자가 입력한 비밀번호가 없다면
         if (password == null) return false;
@@ -443,18 +533,30 @@ public class ChatService {
      */
     public PublicChatRoomsDetailResponseDto getPublicChatRooms(int page, String age, Integer minAmount, Integer maxAmount, String job) {
 
-        // 필터에 맞는 채팅방을 한 페이지를 조회한다.
-        Pageable pageable = PageRequest.of(page, CHATROOM_PAGING_SIZE); // 한 페이지 당 최대 30개를 가져온다.
+        List<ChatRoom> chatRoomList = null;
 
         AgeGroup ageEnum = (age != null) ? AgeGroup.valueOf(age) : null; // 연령대 타입 변환
         Job jobEnum = (job != null) ? Job.valueOf(job.toUpperCase()) : null; // 직업 타입 변환
 
         // null 값이면 필터링에서 무시합니다.
         // 최소 금액이 null 값이면 0원으로, 최대 금액이 null 값이면 2147483647 로 변환해서 필터링합니다.
-        Page<ChatRoom> chatRoomPage = chatRoomRepository.findAllWithPagination(ageEnum, minAmount, maxAmount, jobEnum, pageable);
-        List<ChatRoom> chatRoomList = chatRoomPage.getContent();
+        // page 값이 0일 때만 사용합니다. (추천순 정렬)
+        Page<ChatRoom> chatRoomPageOrder = chatRoomRepository.findAllWithPagination(ageEnum, minAmount, maxAmount, jobEnum, PageRequest.of(0, CHATROOM_PAGING_SIZE));
+        List<Long> chatRoomIds = chatRoomPageOrder.getContent().stream()
+                .map(chatRoom -> chatRoom.getId())
+                .toList();
 
-        // TODO: 정렬 기준 추가
+        System.out.println("chatRoomList Size: " + chatRoomIds.size());
+
+        if (page == 0) {
+            chatRoomList = chatRoomPageOrder.getContent();
+        } else if (page > 0) {
+
+            Pageable pageable = PageRequest.of(page - 1, CHATROOM_PAGING_SIZE); // 한 페이지 당 최대 20개를 가져온다.
+            Page<ChatRoom> chatRoomPageRandom = chatRoomRepository.findRandomByIdNotIn(chatRoomIds, pageable);
+            chatRoomList = chatRoomPageRandom.getContent();
+        }
+
         return PublicChatRoomsDetailResponseDto.builder()
                 .publicChatRoomDetailDtos(chatRoomList.stream()
                         .map(chatRoom -> PublicChatRoomsDetailResponseDto.PublicChatRoomDetailDto.of(chatRoom))
@@ -530,12 +632,15 @@ public class ChatService {
      * 2. 저장한 Uuid를 기반으로 S3 key 생성
      * 3. AmazonS3Manager를 통해 파일 업로드 후 S3에 저장된 URL 반환
      *
-     * @param chatRoomId 채팅방 ID (필요에 따라 추가 검증 가능)
-     * @param file 업로드할 이미지 파일
      * @return S3에 저장된 이미지 URL
      */
     @Transactional
-    public String uploadChatImage(Long chatRoomId, MultipartFile file) {
+    public String uploadChatImage(Long userId,Long chatRoomId, MultipartFile file) {
+        // chatRoomId를 통해, 유저가 해당 채팅방에 소속해있는지 점검
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+        chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId).orElseThrow(()->new ChatRoomMembershipHandler(ErrorStatus._CHATROOM_NO_PERMISSION));
+
+        // 해당 유저가 채팅방에 소속되어 권한 인증이 완료되면, 이미지를 업로드해서 url 리턴
         // 새로운 Uuid 엔티티 생성 (랜덤 UUID 문자열 생성)
         Uuid uuidEntity = Uuid.builder().uuid(UUID.randomUUID().toString()).build();
         // DB에 저장 (중복 방지)
@@ -544,5 +649,134 @@ public class ChatService {
         String keyName = amazonS3Manager.generateChatKeyName(uuidEntity);
         // S3에 파일 업로드 및 URL 반환
         return amazonS3Manager.uploadFile(keyName, file);
+    }
+
+
+    // 채팅방 방장이 맞는지 확인하고 수정
+    @Transactional
+    public Long updateChatRoom(Long userId, Long chatRoomId, ChatRoomDetailRequestDto.ChatRoomUpdateDTO updateDTO) {
+        // 유저 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 채팅방 찾기
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 해당 유저가 방장인지 확인
+        ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 방장일 경우 내용 수정
+        if (chatRoomMembership.getIsHost()){
+            // 비밀번호 - 빈칸이나 null로 작성하였을 때
+            if (updateDTO.getChatRoomPassword() == null || updateDTO.getChatRoomPassword().isEmpty()) {
+                chatRoom.setPassword(null);
+            } else {
+                chatRoom.setPassword(updateDTO.getChatRoomPassword());
+            }
+            chatRoom.setPassword(updateDTO.getChatRoomPassword());
+            chatRoom.setTitle(updateDTO.getChatRoomName());
+            chatRoom.setDailySpendingGoalFilter(updateDTO.getChatRoomSpendingAmountGoal());
+            chatRoom.setMaxParticipants(updateDTO.getChatRoomMaxUserCount());
+        } else {
+            // 방장이 아닌데 채팅방 내용을 수정하려고 할 때 에러 발생하도록
+            new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NO_PERMISSION);
+        }
+
+        // 수정 내용 저장
+         chatRoomRepository.save(chatRoom);
+
+        return chatRoom.getId();
+    }
+
+
+    public void sendReceiptChatRoom(Expense response, Long userId){
+        List<ChatRoomMembership> chatRooms = getChatRoomMemberships(userId);
+        chatRooms.stream().map(membership -> MessageDto.builder()
+                        .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                        .chatRoomId(membership.getChatroom().getId())
+                        .senderId(userId)
+                        .messageType("RECEIPT")
+                        .content(String.valueOf(response.getId())) // 지출내역 아이디를 String으로 전환해서 넣기.
+                        .timestamp(LocalDateTime.now().toString())
+                        .build())
+                .forEach(message -> {
+                    sendMessage(message); // 메시지 전송
+                    log.info("Send a receipt message to chat room ID: {}", message.chatRoomId());
+                    saveMessages(message); // 메시지 저장
+                });
+    }
+
+    public void sendImageChat(Long userId, Long chatRoomId, String imageUrl){
+        MessageDto message = MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                .chatRoomId(chatRoomId)
+                .senderId(userId)
+                .messageType("IMAGE")
+                .content(imageUrl)
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+        sendMessage(message); // 메시지 전송
+        log.info("Send a image message to chat room ID: {}", message.chatRoomId());
+        saveMessages(message); // 메시지 저장
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatRoomMembership> getChatRoomMemberships(Long userId) {
+        List<ChatRoomMembership> chatRooms = chatRoomMembershipRepository.findAllByUserId(userId);
+        return chatRooms;
+    }
+
+    /**
+     * 사용자가 방장일 때, 특정 사용자를 퇴출 시키는 경우 메시지를 전송
+     * 퇴장 메시지도 RabbitMQ를 통해 해당 채팅방에 있는 모든 클라이언트로 전송.
+     *
+     * @param messageDto 전송할 메시지 정보
+     */
+    public void expelMessage(MessageDto messageDto) {
+
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+    }
+
+    @Transactional
+    public void expelChatRoom(Long userId, Long targetUserId, Long chatRoomId, MessageDto messageDto) {
+        // 현재 유저 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 퇴장시키고자 하는 유저 찾기
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
+
+        // 채팅방 찾기
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 해당 유저가 방장인지 확인
+        ChatRoomMembership userChatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 퇴장시키고자 하는 유저가 그룹 채팅방 유저가 맞는지 확인
+        ChatRoomMembership targetUserChatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(targetUser.getId(), chatRoom.getId())
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
+
+        // 방장만 퇴출 가능
+        if (!userChatRoomMembership.getIsHost()) {
+            throw new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NO_PERMISSION);
+        }
+
+        chatRoom.setParticipationCount(chatRoom.getParticipationCount() - 1);
+
+        // 퇴장시키는 유저의 관계 테이블 삭제
+        chatRoomMembershipRepository.delete(targetUserChatRoomMembership);
+        chatRoomRepository.save(chatRoom);
+
+        // RabbitMQ 메시지 전달 - 예외 발생 시 트랜 잭션 롤백
+        try {
+            expelMessage(messageDto);
+        } catch (AmqpException e) {
+            throw new AmqpException("메시지 전송 실패", e); // 예외를 던져서 트랜잭션 롤백 유도
+        }
     }
 }

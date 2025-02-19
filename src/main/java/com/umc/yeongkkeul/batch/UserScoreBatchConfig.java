@@ -108,6 +108,7 @@ public class UserScoreBatchConfig {
 
                 List<ChatRoomMembership> memberships = user.getChatRoomMembershipList();
                 for (ChatRoomMembership membership : memberships) {
+                    membership.setYesterdayScore(membership.getUserScore());
                     membership.setUserScore(score);
                 }
 

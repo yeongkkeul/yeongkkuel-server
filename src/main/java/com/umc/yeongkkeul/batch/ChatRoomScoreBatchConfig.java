@@ -44,16 +44,16 @@ public class ChatRoomScoreBatchConfig {
     public Step updateChatRoomScoreStep() {
         return new StepBuilder("updateChatRoomScoreStep", jobRepository)
                 .<ChatRoom, ChatRoom>chunk(10, transactionManager)
-                .reader(chatRoomItemReader())
-                .processor(chatRoomItemProcessor())
-                .writer(chatRoomItemWriter())
+                .reader(chatRoomScoreItemReader())
+                .processor(chatRoomScoreItemProcessor())
+                .writer(chatRoomScoreItemWriter())
                 .build();
     }
 
     @Bean
-    public ItemReader<ChatRoom> chatRoomItemReader() {
+    public ItemReader<ChatRoom> chatRoomScoreItemReader() {
         return new JpaPagingItemReaderBuilder<ChatRoom>()
-                .name("chatRoomItemReader")
+                .name("chatRoomScoreItemReader")
                 .entityManagerFactory(entityManagerFactory)
                 .queryString("SELECT c FROM ChatRoom c ORDER BY c.id ASC")
                 .pageSize(10)
@@ -61,11 +61,17 @@ public class ChatRoomScoreBatchConfig {
     }
 
     @Bean
-    public ItemProcessor<ChatRoom, ChatRoom> chatRoomItemProcessor() {
+    public ItemProcessor<ChatRoom, ChatRoom> chatRoomScoreItemProcessor() {
         return chatRoom -> {
             List<ChatRoomMembership> chatRoomMembershipList = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(chatRoom.getId());
 
             if (chatRoomMembershipList.size() >= 5) { // 5명 이상인 방만 점수 계산
+
+                // userScore가 null 아닌 유저만 남기기
+                chatRoomMembershipList = chatRoomMembershipList.stream()
+                        .filter(membership -> membership.getUserScore() != null)
+                        .toList();
+
                 // totalScore = 참여자들의 score 합
                 double totalScore = chatRoomMembershipList.stream()
                         .mapToDouble(ChatRoomMembership::getUserScore)
@@ -99,7 +105,7 @@ public class ChatRoomScoreBatchConfig {
     }
 
     @Bean
-    public ItemWriter<ChatRoom> chatRoomItemWriter() { // 최종 점수 저장
+    public ItemWriter<ChatRoom> chatRoomScoreItemWriter() { // 최종 점수 저장
         return new JpaItemWriterBuilder<ChatRoom>()
                 .entityManagerFactory(entityManagerFactory)
                 .build();

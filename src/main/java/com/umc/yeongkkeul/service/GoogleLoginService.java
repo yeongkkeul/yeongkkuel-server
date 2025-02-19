@@ -50,9 +50,24 @@ public class GoogleLoginService {
 
         Boolean isExistTerms = userTermsRepository.existsByUser_EmailAndUser_OauthType(googleInfoResponseDto.getEmail(),"GOOGLE");
 
-        TokenDto tokenDto = tokenProvider.genrateToken(googleInfoResponseDto.getEmail());
-        String accessToken = tokenDto.getAccessToken();
-        String refreshToken = tokenDto.getRefreshToken();
+        Boolean isExistUser = userRepository.existsByEmail(googleInfoResponseDto.getEmail());
+        String accessToken;
+        String refreshToken;
+
+        if(isExistUser){
+            TokenDto tokenDto = tokenProvider.createAccessToken(googleInfoResponseDto.getEmail());
+            accessToken = tokenDto.getAccessToken();
+            refreshToken = userRepository.findByEmail(googleInfoResponseDto.getEmail())
+                    .get().getOauthKey();
+        }else{
+            TokenDto tokenDto = tokenProvider.genrateToken(googleInfoResponseDto.getEmail());
+            accessToken = tokenDto.getAccessToken();
+            refreshToken = tokenDto.getRefreshToken();
+        }
+
+
+
+        //현재 refreshToken이 DB에 있는 사용자는 accessToken 생성 혹은 둘 다 생성
 
         String redirectUrl = isExistTerms ? "/api/home" : "/api/auth/user-info";
 
@@ -61,26 +76,31 @@ public class GoogleLoginService {
         }
 
         // 2) DB 조회 or 가입
-        Boolean isExistUser = userRepository.existsByOauthTypeAndEmail("GOOGLE", googleInfoResponseDto.getEmail());
-        if(!isExistUser) {
-            User newUser = User.builder()
-                    .oauthType("GOOGLE")
-                    .oauthKey(refreshToken)
-                    .job(Job.UNDECIDED)
-                    .ageGroup(AgeGroup.UNDECIDED)
-                    .referralCode(generateRandomCode(6))
-                    .email(googleInfoResponseDto.getEmail())
-                    .nickname(googleInfoResponseDto.getName())
-                    .gender("UNDECIDED")
-                    .build();
-            userRepository.save(newUser);
-        }
+        User user = userRepository.findByOauthTypeAndEmail("GOOGLE", googleInfoResponseDto.getEmail())
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .oauthType("GOOGLE")
+                            .oauthKey(refreshToken)
+                            .job(Job.UNDECIDED)
+                            .ageGroup(AgeGroup.UNDECIDED)
+                            .referralCode(generateRandomCode(6))
+                            .email(googleInfoResponseDto.getEmail())
+                            .nickname(googleInfoResponseDto.getName())
+                            .gender("UNDECIDED")
+                            .rewardBalance(0)
+                            .build();
+                    // 새로 생성 후 DB 저장
+                    return userRepository.save(newUser);
+                });
+
+        user.setOauthKey(refreshToken); // 여기서 리프레시 토큰을 저장해야, 로그인시 보내는 리프레시 토큰과 일치 여부 로직 수행가능.
 
         return SocialInfoResponseDto.GoogleInfoDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .email(googleInfoResponseDto.getEmail())
                 .redirectUrl(redirectUrl)
+                .userId(user.getId()) // 여기 추가
                 .build();
 
     }

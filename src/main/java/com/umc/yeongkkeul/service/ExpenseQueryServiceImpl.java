@@ -146,13 +146,19 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
             }
         }
 
-        // 하루 목표 지출액
-        int dayTargetExpenditure = user.getDayTargetExpenditure() != null ? user.getDayTargetExpenditure() : 0;
+        // 하루 목표 지출액이 null일 경우의 반환
+        if (user.getDayTargetExpenditure() == null){
+            return ExpenseResponseDTO.WeeklyExpenditureViewDTO.builder()
+                    .weekExpenditure(weekExpenditure)
+                    // .dayTargetExpenditure(dayTargetExpenditure)
+                    .expenses(expensesPerDay)
+                    .build();
+        }
 
         // 응답 반환
         return ExpenseResponseDTO.WeeklyExpenditureViewDTO.builder()
                 .weekExpenditure(weekExpenditure)
-                .dayTargetExpenditure(dayTargetExpenditure)
+                .dayTargetExpenditure(user.getDayTargetExpenditure())
                 .expenses(expensesPerDay)
                 .build();
     }
@@ -199,8 +205,8 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
         // 나이대와 직업이 둘 다 UNDECIDED인 경우 또는 사용자가 직접 지출을 작성한 날의 갯수가 일주일의 절반도 되지 않을 경우, 다른 응답 객체 반환
         if (user.getAgeGroup() == AgeGroup.UNDECIDED && user.getJob() == Job.UNDECIDED || numberOfExpenditureDay < 4) {
             // 여기서 나이대와 직업이 UNDECIDED일 경우 다른 응답을 리턴
-            // 이때 저번주에 얼마 사용, 이번주에 얼마 사용, 많이 쓴 카테고리 이름, 카테고리별 지출 내역 리스트 넘기기
-            return handleUnDecidedUser(user.getAgeGroup(), user.getJob(), lastWeekExpenditure, thisWeekExpenditure, hightestExpenditureCategoryName ,categoryList); // 다른 응답 포맷을 리턴하는 메서드 호출
+            // 이때 하루 평균 지출액, 저번주에 얼마 사용, 이번주에 얼마 사용, 많이 쓴 카테고리 이름, 카테고리별 지출 내역 리스트 넘기기
+            return handleUnDecidedUser(user.getAgeGroup(), user.getJob(), dailyAverage, lastWeekExpenditure, thisWeekExpenditure, hightestExpenditureCategoryName ,categoryList); // 다른 응답 포맷을 리턴하는 메서드 호출
         }
 
         // 나이, 직업 둘 중 하나 설정되어 있을 경우 response
@@ -218,11 +224,12 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
     }
 
     // 나이대와 직업이 UNDECIDED인 경우, 다른 응답을 반환하는 메서드
-    private ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO handleUnDecidedUser(AgeGroup userAgeGroup, Job userJob, Integer lastWeekExpenditure, Integer thisWeekExpenditure, String highestExpenditureCategoryName, List<CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO> categoryList) {
+    private ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO handleUnDecidedUser(AgeGroup userAgeGroup, Job userJob, Integer dailyAverage, Integer lastWeekExpenditure, Integer thisWeekExpenditure, String highestExpenditureCategoryName, List<CategoryResponseDTO.CategoryViewListWithWeeklyExpenditureDTO> categoryList) {
         // UNDECIDED일 경우 반환할 다른 응답 형태
         return ExpenseResponseDTO.WeeklyAverageExpenditureViewDTO.builder()
                 .age(userAgeGroup)
                 .job(userJob)
+                .myAverageExpenditure(dailyAverage)
                 .lastWeekExpenditure(lastWeekExpenditure)
                 .thisWeekExpenditure(thisWeekExpenditure)
                 .highestExpenditureCategoryName(highestExpenditureCategoryName)
@@ -414,6 +421,7 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
         int achieveDays = calculateAchieveDays(user, thisMonthExpenditureList);
 
         return ExpenseResponseDTO.MonthlyExpenditureViewDTO.builder()
+                .dayTargetExpenditure(user.getDayTargetExpenditure())
                 .totalMonthExpenditure(thisMonthExpenditure)
                 .selectedMonthExpenses(thisMonthExpenditureList)
                 .previousMonthExpenses(lastMonthExpenditureList)

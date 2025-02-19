@@ -17,9 +17,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,7 +50,7 @@ public class StoreService {
                 .map(purchase -> PurchaseResponseDTO.PurchaseViewDTO.builder()
                         .itemName(purchase.getItem().getName())
                         .itemType(purchase.getItem().getType().toString())
-                        .imgUrl(purchase.getItem().getImgUrl())
+                        .imgUrl(purchase.getImageUrl())
                         .build())
                 .collect(Collectors.toList());
 
@@ -59,7 +63,7 @@ public class StoreService {
                             .id(purchase.getId())
                             .itemName(purchase.getItem().getName())
                             .price(purchase.getItem().getPrice())
-                            .itemImg(purchase.getItem().getImageUrl())
+                            .itemImg(purchase.getItem().getImgUrl())
                             .build())
                     .collect(Collectors.toList());
 
@@ -106,6 +110,22 @@ public class StoreService {
             throw new GeneralException(ErrorStatus._NOT_ENOUGH_REWARD);
         }
 
+        String itemName = item.getImgUrl();
+
+
+        String regex = "Store(.*?)\\.png";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(itemName);
+
+        String itemNameWithoutEncoding = "";
+        if (matcher.find()) {
+            itemNameWithoutEncoding = matcher.group(1); // Extract the matched part without encoding
+        }
+
+        // Construct the final image URL with the item name without encoding
+        String baseUrl = "https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/store-item/";
+        String imageUrl = baseUrl + "Home" + itemNameWithoutEncoding + ".png";  // 최종 URL
+
 
         if(!processionItem){
 
@@ -116,6 +136,7 @@ public class StoreService {
                     .usedReward(item.getPrice())
                     .isUsed(false)
                     .type(purchaseItemInfo.getItemType())
+                    .imageUrl(imageUrl)
                     .build();
 
             purchaseRepository.save(purchase);

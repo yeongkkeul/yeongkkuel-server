@@ -18,7 +18,7 @@ import static com.umc.yeongkkeul.security.FindLoginUser.toId;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "MyPage", description = "마이페이지 관련 API")
+@Tag(name = "마이페이지 API", description = "마이페이지 관련 API 입니다.")
 public class MyPageController {
 
     private final MyPageCommandService myPageCommandService;
@@ -55,7 +55,7 @@ public class MyPageController {
     }
 
     @Operation(summary = "하루 목표 지출액 수정")
-    @PatchMapping("/api/expenditures/target")
+    @PatchMapping("/api/expense/target")
     public ApiResponse<MyPageInfoResponseDto> updateDayTargetExpenditure(@RequestBody ExpenseRequestDTO.DayTargetExpenditureRequestDto dayTargetExpenditureRequestDto) {
         Long userId = toId(getCurrentUserId());
 
