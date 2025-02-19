@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.repository;
 
+import com.umc.yeongkkeul.domain.ChatRoom;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,4 +38,6 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
     List<ChatRoomMembership> findByChatroomIdOrderByYesterdayScoreDesc(@Param("chatRoomId") Long chatRoomId);
 
     Optional<ChatRoomMembership> findByChatroom_IdAndUser_Id(Long chatRoomId, Long userId);
+
+    List<ChatRoomMembership> findAllByChatroom(ChatRoom chatRoom);
 }
