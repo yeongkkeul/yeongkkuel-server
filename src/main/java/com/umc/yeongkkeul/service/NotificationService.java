@@ -157,6 +157,14 @@ public class NotificationService {
             return;
         }
 
+        // 오늘 날짜에 "하루 목표 지출액 초과" 알림이 이미 생성되었는지 확인하기
+        boolean notificationExists = notificationReadRepository.existsExceedDailySpendingGoalNotification(userId, LocalDate.now());
+
+        // 오늘 "하루 목표 지출액 초과" 알림이 이미 생성된 경우, 중복 생성 X
+        if (notificationExists) {
+            return;
+        }
+
         List<Expense> expenditures = expenseRepository.findByUserIdAndExpenseDayToday(userId, expenseday);
 
         int totalSpending = expenditures.stream().mapToInt(Expense::getAmount).sum();
