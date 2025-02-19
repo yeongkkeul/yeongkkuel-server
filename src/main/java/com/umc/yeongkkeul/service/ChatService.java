@@ -38,6 +38,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,6 +66,7 @@ public class ChatService {
     private final UuidRepository uuidRepository;
 
     private final RabbitTemplate rabbitTemplate; // RabbitMQ를 통해 메시지를 전송하는 템플릿
+    private final SimpMessagingTemplate messagingTemplate; // 내장 STOMP를 통해 메시지를 전송하는 템플릿
     private final RedisTemplate<String, Object> redisTemplate; // Redis에 메시지를 저장하고 조회하는 템플릿
     private final AmazonS3Manager amazonS3Manager;
 
@@ -73,7 +75,6 @@ public class ChatService {
             "https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/chatroom-profile/basic-profile.png";
 
 
-    private final String READ_STATUS_KEY_PREFIX = "read:message:"; // 읽은 메시지 상태를 저장할 때 사용할 Redis 키 접두어
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
 
     @Value("${rabbitmq.exchange.name}")
@@ -101,7 +102,7 @@ public class ChatService {
                 .messageType(messageDto.messageType())
                 .content(messageDto.content())
                 .timestamp(LocalDateTime.now().toString())
-                .unreadCount(userCount)
+                .unreadCount(userCount - 1)
                 .rabbitMQTransmissionStatus(true)
                 .finalTransmissionStatus(true)
                 .saveStatus(true)
@@ -161,9 +162,9 @@ public class ChatService {
     public List<MessageDto> getMessages(Long chatRoomId) {
 
         String redisKey = "chat:room:" + chatRoomId + ":message";
-        List<Object> messgeList = redisTemplate.opsForList().range(redisKey, 0, -1);
+        List<Object> messageList = redisTemplate.opsForList().range(redisKey, 0, -1);
 
-        return messgeList.stream()
+        return messageList.stream()
                 .map(object -> (MessageDto) object)
                 .toList();
     }
@@ -199,10 +200,10 @@ public class ChatService {
             long end = start + REDIS_BATCH_SIZE - 1;
             if (end >= messageSize) end = messageSize - 1;
 
-            List<Object> messgeList = redisTemplate.opsForList().range(redisKey, start, end);
+            List<Object> messageList = redisTemplate.opsForList().range(redisKey, start, end);
 
             // 읽어온 메시지들에서 lastClientMessageId를 포함하는 메시지 찾기
-            for (Object message : messgeList) {
+            for (Object message : messageList) {
                 if (message != null) {
 
                     MessageDto messageDto = (MessageDto) message;
@@ -278,46 +279,72 @@ public class ChatService {
                 .build();
     }
 
-    /*
     @Transactional
-    public void readMessage(Long chatRoomId, List<Long> messageList) {
+    public void readMessage(Long chatRoomId, Long lastClientMessageId) {
 
-        System.out.println("ChatService.readMessage");
+        String redisKey = "chat:room:" + chatRoomId + ":message";
+        ListOperations<String, Object> listOps = redisTemplate.opsForList();
+        long messageSize = listOps.size(redisKey);
 
-        Map<Long, Integer> unreadCount = new HashMap<>();
+        // 30개씩 읽어오며, ID를 찾을 때까지 반복
+        final int REDIS_BATCH_SIZE = 30;
+        for (long start = 0; start < messageSize; start += REDIS_BATCH_SIZE) {
 
-        // 채팅방에 참여한 사용자들 조회
-        List<ChatRoomMembership> users = chatRoomMembershipRepository.findAllByChatroomId(chatRoomId);
-        int chatRoomUserCount = users.size();
+            long end = Math.min(start + REDIS_BATCH_SIZE - 1, messageSize - 1);
 
-        for (Long messageId : messageList) {
+            List<Object> messageList = redisTemplate.opsForList().range(redisKey, start, end);
 
-            String redisKey = READ_STATUS_KEY_PREFIX + chatRoomId + ":message";
-            String field = READ_STATUS_KEY_PREFIX + chatRoomId + ":" + messageId;
-
-            // Redis에서 읽지 않은 상태 조회
-            Integer value = (Integer) redisTemplate.opsForHash().get(redisKey, field);
-
-            if (value == null) {
-                redisTemplate.opsForHash().put(redisKey, field, chatRoomUserCount - 1);
-                unreadCount.put(messageId, chatRoomUserCount - 1);
-            } else {
-
-                if (value > 0) {
-                    redisTemplate.opsForHash().put(redisKey, field, value - 1);
-                    unreadCount.put(messageId, value - 1);
+            for (int i = 0; i < messageList.size(); i++) {
+                Object messageObj = messageList.get(i);
+                if (messageObj == null) {
+                    log.error("The Message is NULL at index {}", start + i);
+                    continue;
                 }
+
+                // 역직렬화 처리
+                MessageDto messageDto;
+                if (messageObj instanceof MessageDto) {
+                    messageDto = (MessageDto) messageObj;
+                } else {
+                    continue;
+                }
+
+                // 메시지 ID 체크 후 종료
+                if (messageDto.id() <= lastClientMessageId) {
+
+                    // 최종 읽음 상태를 포함한 응답 객체 생성
+                    ReadMessageResponseDto readMessageResponseDto = ReadMessageResponseDto.builder()
+                            .lastClientMessageId(lastClientMessageId)
+                            .build();
+
+                    // RabbitMQ에 읽음 상태 정보 전송
+                    //rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, READ_STATUS_KEY_PREFIX + chatRoomId, readMessageResponseDto, new CorrelationData(UUID.randomUUID().toString()));
+                    messagingTemplate.convertAndSend("/topic/read.room." + chatRoomId, readMessageResponseDto);
+
+                    return;
+                }
+
+                if (!messageDto.messageType().equals("TEXT") && !messageDto.messageType().equals("IMAGE") && !messageDto.messageType().equals("RECEIPT")) {
+                    continue;
+                }
+
+                messageDto = MessageDto.builder()
+                        .id(messageDto.id())
+                        .chatRoomId(messageDto.chatRoomId())
+                        .senderId(messageDto.senderId())
+                        .messageType(messageDto.messageType())
+                        .content(messageDto.content())
+                        .timestamp(messageDto.timestamp())
+                        .unreadCount(messageDto.unreadCount() > 0 ? messageDto.unreadCount() - 1 : 0)
+                        .rabbitMQTransmissionStatus(messageDto.rabbitMQTransmissionStatus())
+                        .finalTransmissionStatus(messageDto.finalTransmissionStatus())
+                        .saveStatus(messageDto.saveStatus())
+                        .build();
+
+                listOps.set(redisKey, start + i, messageDto); // Redis 리스트 업데이트
             }
         }
-
-        // 최종 읽음 상태를 포함한 응답 객체 생성
-        ReadMessageResponseDto readMessageResponseDto = ReadMessageResponseDto.builder()
-                .unreadCount(unreadCount)
-                .build();
-
-        // RabbitMQ에 읽음 상태 정보 전송
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, READ_STATUS_KEY_PREFIX + chatRoomId, readMessageResponseDto);
-    }*/
+    }
 
     /**
      * 메시지를 DB에 저장하고 Redis에 캐시.

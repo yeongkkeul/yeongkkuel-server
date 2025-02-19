@@ -6,6 +6,6 @@ import java.util.Map;
 
 @Builder
 public record ReadMessageResponseDto(
-    Map<Long, Integer> unreadCount
+    Long lastClientMessageId
 ) {
 }

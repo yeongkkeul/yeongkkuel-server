@@ -180,8 +180,6 @@ public class ChatController {
     @MessageMapping("read.message.{roomId}")
     public void readMessage(@DestinationVariable("roomId") Long roomId, ReadMessageRequestDto readMessageRequestDto) {
 
-        System.out.println("ChatController.readMessage");
-
-        // chatService.readMessage(roomId, readMessageRequestDto.messageList());
+        chatService.readMessage(roomId, Long.parseLong(readMessageRequestDto.lastClientMessageId()));
     }
 }
