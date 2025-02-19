@@ -584,7 +584,10 @@ public class ChatService {
     @Transactional(readOnly = true)
     public AmazonS3Manager.S3DownloadResponse downloadChatImage(Long chatRoomId, Long messageId) {
         Optional<MessageDto> optionalImageMessage = getMessages(chatRoomId).stream()
-                .filter(m -> m.id().equals(messageId) && "IMAGE".equalsIgnoreCase(m.messageType()))
+                .filter(m -> {
+                    System.out.println("Comparing: m.id()=" + m.id() + " (" + m.id().getClass() + ") vs messageId=" + messageId + " (" + messageId.getClass() + ")");
+                    return m.id().equals(messageId) && "IMAGE".equalsIgnoreCase(m.messageType());
+                })
                 .findFirst();
         if (optionalImageMessage.isEmpty()) {
             throw new ChatRoomHandler(ErrorStatus._CHAT_IMAGE_NOT_FOUND);
