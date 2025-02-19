@@ -83,9 +83,11 @@ public class User extends BaseEntity {
     private boolean notificationAgreed;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<Reward> rewardList = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
 
     /*
