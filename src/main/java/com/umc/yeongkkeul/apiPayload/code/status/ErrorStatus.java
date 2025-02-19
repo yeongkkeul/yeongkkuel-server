@@ -29,6 +29,7 @@ public enum ErrorStatus implements BaseErrorCode {
     CATEGORY_NO_PERMISSION(HttpStatus.FORBIDDEN, "CATEGORY4002", "해당 카테고리에 대한 접근 권한이 없습니다."),
     CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "CATEGORY4001", "카테고리를 찾을 수 없습니다."),
     CANNOT_DELETE_TRASH_CATEGORY(HttpStatus.BAD_REQUEST, "CATEGORY4003", "임시 카테고리는 삭제할 수 없습니다."),
+    CATEGORY_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "CATEGORY4005", "카테고리의 최대 개수에 도달했습니다."),
 
     //JWT
     _INVALID_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "USER4003", "유효하지 않은 토큰입니다."),
