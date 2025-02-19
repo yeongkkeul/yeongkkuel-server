@@ -42,6 +42,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -579,6 +581,7 @@ public class ChatService {
      * 채팅방 내의 특정 이미지 메시지에 해당하는 파일을 S3에서 다운로드
      * S3DownloadResponse에는 파일 데이터와 원본 콘텐츠 타입이 포함
      */
+    @Transactional(readOnly = true)
     public AmazonS3Manager.S3DownloadResponse downloadChatImage(Long chatRoomId, Long messageId) {
         Optional<MessageDto> optionalImageMessage = getMessages(chatRoomId).stream()
                 .filter(m -> m.id().equals(messageId) && "IMAGE".equalsIgnoreCase(m.messageType()))
@@ -587,7 +590,20 @@ public class ChatService {
             throw new ChatRoomHandler(ErrorStatus._CHAT_IMAGE_NOT_FOUND);
         }
         MessageDto imageMessage = optionalImageMessage.get();
-        return amazonS3Manager.downloadFileWithMetadata(imageMessage.content());
+        String imageUrl = imageMessage.content();
+
+        // URL에서 S3 key 파싱 ("https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/chat/badb12fa-8d10-487b-9536-d43735f6f59f" -> "chat/badb12fa-8d10-487b-9536-d43735f6f59f")
+        // 다운로드시, S3의 키를 통해서 다운로드 해야함.
+        try {
+            URL url = new URL(imageUrl);
+            String key = url.getPath(); // "/chat/badb12fa-8d10-487b-9536-d43735f6f59f"
+            if (key.startsWith("/")) {
+                key = key.substring(1);
+            }
+            return amazonS3Manager.downloadFileWithMetadata(key);
+        } catch (MalformedURLException e) {
+            throw new ChatRoomHandler(ErrorStatus._CHAT_IMAGE_NOT_FOUND);
+        }
     }
 
     /**
