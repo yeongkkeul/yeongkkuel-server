@@ -178,51 +178,63 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
         Category category = expense.getCategory();
         User user = expense.getUser();
 
-        if (expense.getIsNoSpending()) {
-            LocalDate currentDay = expense.getDay();
-            LocalDate yesterday = currentDay.minusDays(1);
-
-            // 어제 같은 카테고리에 '무지출'이 있었는지 조회
-            boolean hasNoSpendingYesterday = expenseRepository.existsNoSpendingExpense(
-                    user.getId(),
-                    category.getId(),
-                    yesterday
-            );
-
-            if (hasNoSpendingYesterday) {
-                // 연속 일수 +1
-                category.setConsecutiveNoSpendingDays(category.getConsecutiveNoSpendingDays() + 1);
-            } else {
-                // 새롭게 시작(연속 1일)
-                category.setConsecutiveNoSpendingDays(1);
-            }
-
-            // 5의 배수인지 체크
-            int consecutiveDays = category.getConsecutiveNoSpendingDays();
-            if (consecutiveDays % 5 == 0) {
-                // (5×k) 일 연속 달성
-                int k = consecutiveDays / 5;
-
-                // 보상 로직: 10×k
-                int reward = 10 * k;
-                user.setRewardBalance(user.getRewardBalance() + reward);
-                userRepository.save(user);
-
-                // 알림
-                notificationService.createNotification(
-                        user.getId(),
-                        new NotificationDetailRequestDto(
-                                "AWARD_NO_SPENDING_REWARDS",
-                                "[무지출 보상] " + category.getName() + " 카테고리 "
-                                        + consecutiveDays + "일 연속 무지출 달성으로 "
-                                        + reward + "P 획득!",
-                                null
-                        )
-                );
-            }
-        } else {
-            // 무지출이 아닐 경우 연속 일수 끊김
+        // 만약 isNoSpending = false (일반 지출)이면, 바로 연속 무지출 끊고 리턴
+        if (!expense.getIsNoSpending()) {
             category.setConsecutiveNoSpendingDays(0);
+            return;
+        }
+
+        // 여기부터는 isNoSpending = true인 경우만 처리
+        LocalDate currentDay = expense.getDay();
+
+        // 오늘 다른 지출(무지출)이 있는지 점검. 만약 있다면 -> 이는 사용자의 악용 방지, 현재 것도 포함이므로 1개 초과시 이미 존재!
+        long countToday = expenseRepository.countByUserAndDay(user, currentDay);
+
+        if (countToday > 1) {
+            // 이미 오늘 해당 유저가 어떤 지출(혹은 무지출) 기록을 가지고 있음
+            // → 연속 무지출 증가 로직 "무시"
+            return;
+        }
+
+        // 여기까지 얼리리턴하지 않고 도달한 것은 오늘 첫 지출내역이라는 내용
+        // 어제 무지출이 있었는지 확인해서 연속 일수를 계산
+        LocalDate yesterday = currentDay.minusDays(1);
+        boolean hasNoSpendingYesterday = expenseRepository.existsNoSpendingExpense(
+                user.getId(),
+                category.getId(),
+                yesterday
+        );
+
+        if (hasNoSpendingYesterday) {
+            // 연속 일수 +1
+            category.setConsecutiveNoSpendingDays(category.getConsecutiveNoSpendingDays() + 1);
+        } else {
+            // 새롭게 시작(연속 1일)
+            category.setConsecutiveNoSpendingDays(1);
+        }
+
+        // 5의 배수인지 체크
+        int consecutiveDays = category.getConsecutiveNoSpendingDays();
+        if (consecutiveDays % 5 == 0) {
+            // (5×k) 일 연속 달성
+            int k = consecutiveDays / 5;
+
+            // 보상 로직: 10×k
+            int reward = 10 * k;
+            user.setRewardBalance(user.getRewardBalance() + reward);
+            userRepository.save(user);
+
+            // 알림
+            notificationService.createNotification(
+                    user.getId(),
+                    new NotificationDetailRequestDto(
+                            "AWARD_NO_SPENDING_REWARDS",
+                            "[무지출 보상] " + category.getName() + " 카테고리 "
+                                    + consecutiveDays + "일 연속 무지출 달성으로 "
+                                    + reward + "P 획득!",
+                            null
+                    )
+            );
         }
     }
 

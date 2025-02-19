@@ -38,4 +38,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             @Param("categoryId") Long categoryId,
             @Param("day") LocalDate day
     );
+
+    // 특정 유저가 특정 날짜에 가지고 있는 지출(무지출 포함) 레코드 개수를 반환
+    long countByUserAndDay(User user, LocalDate day);
 }
