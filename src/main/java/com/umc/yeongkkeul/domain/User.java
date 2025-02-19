@@ -137,4 +137,9 @@ public class User extends BaseEntity {
     public AgeGroup getAge() {
         return ageGroup;
     }
+
+    public void addReward(Reward reward) {
+        this.rewardList.add(reward);
+        reward.setUser(this);
+    }
 }

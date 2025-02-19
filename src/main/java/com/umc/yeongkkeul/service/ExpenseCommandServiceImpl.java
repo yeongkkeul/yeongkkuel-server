@@ -8,12 +8,11 @@ import com.umc.yeongkkeul.aws.s3.AmazonS3Manager;
 import com.umc.yeongkkeul.converter.ExpenseConverter;
 import com.umc.yeongkkeul.domain.Category;
 import com.umc.yeongkkeul.domain.Expense;
+import com.umc.yeongkkeul.domain.Reward;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.common.Uuid;
-import com.umc.yeongkkeul.repository.CategoryRepository;
-import com.umc.yeongkkeul.repository.ExpenseRepository;
-import com.umc.yeongkkeul.repository.UserRepository;
-import com.umc.yeongkkeul.repository.UuidRepository;
+import com.umc.yeongkkeul.domain.enums.RewardType;
+import com.umc.yeongkkeul.repository.*;
 import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
 import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
 import com.umc.yeongkkeul.web.dto.NotificationDetailRequestDto;
@@ -37,6 +36,7 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
     private final UuidRepository uuidRepository;
     private final AmazonS3Manager amazonS3Manager;
     private final NotificationService notificationService;
+    private final RewardRepository rewardRepository;
 
     // 유저의 지출 내역 생성
     @Override
@@ -222,7 +222,21 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
             // 보상 로직: 10×k
             int reward = 10 * k;
             user.setRewardBalance(user.getRewardBalance() + reward);
-            userRepository.save(user);
+
+
+
+            Reward rewardRecord = Reward.builder()
+                    .amount(reward)
+                    .rewardType(RewardType.INDIVIDUAL)
+                    .description(consecutiveDays + "일 연속 무지출 달성 보상")
+                    .user(user)
+                    .build();
+
+            user.addReward(rewardRecord);
+
+            rewardRepository.save(rewardRecord);
+
+
 
             // 알림
             notificationService.createNotification(
