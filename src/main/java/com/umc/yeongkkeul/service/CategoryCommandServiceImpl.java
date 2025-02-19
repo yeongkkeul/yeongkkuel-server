@@ -30,13 +30,20 @@ public class CategoryCommandServiceImpl implements CategoryCommandService{
     public CategoryResponseDTO.CategoryViewDTO addCategory(CategoryRequestDTO.CategoryDTO request, Long userId) {
         // 유저 찾기, 없으면 에러
         User user = userRepository.findById(userId).orElseThrow(() -> new UserHandler(ErrorStatus.USER_NOT_FOUND));
-        
+
+        // 해당 유저가 생성한 카테고리 개수 확인
+        long categoryCount = categoryRepository.countByUser(user);
+        if (categoryCount >= 6) {
+            throw new CategoryHandler(ErrorStatus.CATEGORY_LIMIT_EXCEEDED); // 새 에러 상태 추가 필요
+        }
+
         // 요청정보를 바탕으로 카테고리 생성
         Category category = CategoryConverter.toCategoryDTO(request, user);
         if(categoryRepository.existsByUserAndName(user ,category.getName())){
             // 해당 유저가 이미 생성한 것들 중 중복ㅇㅣ 있는지
             throw new CategoryHandler(ErrorStatus.CATEGORY_DUPLICATE);
         }
+
         user.addCategory(category);
         categoryRepository.save(category);
 
