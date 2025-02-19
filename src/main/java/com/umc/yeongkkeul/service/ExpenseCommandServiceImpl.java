@@ -188,7 +188,7 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
         LocalDate currentDay = expense.getDay();
 
         // 오늘 다른 지출(무지출)이 있는지 점검. 만약 있다면 -> 이는 사용자의 악용 방지, 현재 것도 포함이므로 1개 초과시 이미 존재!
-        long countToday = expenseRepository.countByUserAndDay(user, currentDay);
+        long countToday = expenseRepository.countByUserAndCategoryAndDay(user, category, currentDay);
 
         if (countToday > 1) {
             // 이미 오늘 해당 유저가 어떤 지출(혹은 무지출) 기록을 가지고 있음
