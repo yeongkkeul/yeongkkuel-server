@@ -563,11 +563,15 @@ public class ChatService {
      * 이미지 메시지 URL 리스트를 반환
      * messageType이 "IMAGE"인 경우, content에 저장된 S3 key를 이용해 URL을 생성
      */
-    public List<String> getChatRoomImageUrls(Long chatRoomId) {
+    public List<ImageChatResponseDTO> getChatRoomImageUrls(Long chatRoomId) {
         List<MessageDto> messages = getMessages(chatRoomId);
+
         return messages.stream()
                 .filter(m -> "IMAGE".equalsIgnoreCase(m.messageType()))
-                .map(m -> amazonS3Manager.getFileUrl(m.content()))
+                .map(m -> new ImageChatResponseDTO(
+                        m.id(),                              // 메시지 ID
+                        amazonS3Manager.getFileUrl(m.content())  // S3에 있는 실제 이미지 URL
+                ))
                 .collect(Collectors.toList());
     }
 
