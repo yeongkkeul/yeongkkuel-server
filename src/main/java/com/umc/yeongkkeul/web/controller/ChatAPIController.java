@@ -167,11 +167,11 @@ public class ChatAPIController {
      */
     @PostMapping(value = "/{chatRoomId}/images", consumes = "multipart/form-data")
     @Operation(summary = "채팅 이미지 업로드 & 전송", description = "채팅 이미지를 S3에 업로드하고 url을 채팅으로 전송합니다.")
-    public ApiResponse<String> sendChatImage(@RequestBody ImageChatRequestDTO.ImageDTO request,
-                                               @PathVariable Long chatRoomId
+    public ApiResponse<String> sendChatImage(@PathVariable Long chatRoomId,
+                                             @RequestParam("chatPicture") MultipartFile chatPicture
                                                ) {
         Long userId = toId(getCurrentUserId());
-        String imageUrl = chatService.uploadChatImage(userId,chatRoomId, request.getChatPicture());
+        String imageUrl = chatService.uploadChatImage(userId,chatRoomId, chatPicture);
         chatService.sendImageChat(userId, chatRoomId, imageUrl);
         return ApiResponse.onSuccess(imageUrl); // 전송된 이미지 url 리턴
     }
