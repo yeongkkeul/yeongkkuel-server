@@ -293,7 +293,6 @@ public class ChatService {
      * @param chatRoomDetailRequestDto 채팅방 생성 DTO
      * @return 생성한 채팅방의 ID를 반환합니다.
      */
-    // TODO: Long으로 반환해줄지 Json으로 반환할지 고민 해봐야 된다.
     @Transactional
     public Long createChatRoom(Long userId, ChatRoomDetailRequestDto chatRoomDetailRequestDto, MultipartFile chatRoomImage) {
 
@@ -313,8 +312,6 @@ public class ChatService {
             String uploadedUrl = uploadChatRoomImage(chatRoomImage);
             chatRoom.setImageUrl(uploadedUrl);
         }
-
-
 
         ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
 

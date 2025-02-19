@@ -29,6 +29,8 @@ public class ChatRoomConverter {
                 .ageGroupFilter(AgeGroup.valueOf(chatRoomDetailRequestDto.chatRoomAgeRange()))
                 .jobFilter(Job.valueOf(chatRoomDetailRequestDto.chatRoomJob()))
                 .dailySpendingGoalFilter(chatRoomDetailRequestDto.chatRoomSpendingAmountGoal())
+                .ranking(100)
+                .achievedCount(0)
                 .build();
     }
 
