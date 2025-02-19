@@ -42,16 +42,7 @@ public class ChatController {
     @MessageMapping("chat.message.{roomId}")
     public void sendMessage(@DestinationVariable String roomId, @RequestBody MessageDto messageDto) {
 
-        MessageDto message = MessageDto.builder()
-                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
-                .chatRoomId(messageDto.chatRoomId())
-                .senderId(messageDto.senderId())
-                .messageType(messageDto.messageType())
-                .content(messageDto.content())
-                .timestamp(LocalDateTime.now().toString())
-                .build();
-
-        chatService.sendMessage(message); // 메시지 전송
+        MessageDto message = chatService.sendMessage(messageDto);// 메시지 전송
 
         log.info("Send a message to the group chat room with roomID {}", roomId);
         chatService.saveMessages(message); // 메시지 저장 TODO: 나중에 Consumer를 통해서 저장하자
@@ -81,6 +72,10 @@ public class ChatController {
                 .chatRoomId(enterMessageDto.chatRoomId()) // 채팅방 ID
                 .senderId(enterMessageDto.senderId()) // 발신자 ID
                 .timestamp(LocalDateTime.now().toString()) // 메시지 타임스탬프
+                .unreadCount(0)
+                .rabbitMQTransmissionStatus(true)
+                .finalTransmissionStatus(true)
+                .saveStatus(true)
                 .build();
 
         // 사용자-채팅방 관계 테이블 저장과 가입 메시지 전송.
@@ -112,6 +107,10 @@ public class ChatController {
                 .chatRoomId(messageDto.chatRoomId())
                 .senderId(messageDto.senderId())
                 .timestamp(LocalDateTime.now().toString())
+                .unreadCount(0)
+                .rabbitMQTransmissionStatus(true)
+                .finalTransmissionStatus(true)
+                .saveStatus(true)
                 .build();
 
         try {
@@ -139,6 +138,10 @@ public class ChatController {
                 .chatRoomId(messageDto.chatRoomId())
                 .senderId(messageDto.senderId())
                 .timestamp(LocalDateTime.now().toString())
+                .unreadCount(0)
+                .rabbitMQTransmissionStatus(true)
+                .finalTransmissionStatus(true)
+                .saveStatus(true)
                 .build();
 
         try {
@@ -179,6 +182,6 @@ public class ChatController {
 
         System.out.println("ChatController.readMessage");
 
-        chatService.readMessage(roomId, readMessageRequestDto.messageList());
+        // chatService.readMessage(roomId, readMessageRequestDto.messageList());
     }
 }

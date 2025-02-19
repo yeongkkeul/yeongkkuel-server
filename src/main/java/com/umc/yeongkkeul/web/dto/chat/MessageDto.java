@@ -15,7 +15,10 @@ public record MessageDto(
         Long senderId, // 발신인 ID
         String messageType, // 메시지 타입(텍스트, 사진, 영수증)
         String content, // 메시지 내용
-        String timestamp // 타임스탬프
-        // TODO: Message 전송 여부, 저장 여부를 저장하는 필드가 있으면 좋을듯
+        String timestamp, // 타임스탬프
+        Integer unreadCount, // 안읽은 사용자 수,
+        Boolean rabbitMQTransmissionStatus, // RabbitMQ로 전송을 완료했는지
+        Boolean finalTransmissionStatus, // 최종 메시지 전송 여부
+        Boolean saveStatus // Redis 저장 여부
 ) {
 }

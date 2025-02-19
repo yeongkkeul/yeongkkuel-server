@@ -90,20 +90,34 @@ public class ChatService {
      * 오프라인 수신자에게는 FCM 푸시 분기 처리를 수행합니다.
      */
     @Transactional
-    public void sendMessage(MessageDto messageDto) {
+    public MessageDto sendMessage(MessageDto messageDto) {
+
+        int userCount = chatRoomMembershipRepository.findAllByChatroomId(messageDto.chatRoomId()).size();
+
+        MessageDto message = MessageDto.builder()
+                .id(TsidCreator.getTsid().toLong()) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                .chatRoomId(messageDto.chatRoomId())
+                .senderId(messageDto.senderId())
+                .messageType(messageDto.messageType())
+                .content(messageDto.content())
+                .timestamp(LocalDateTime.now().toString())
+                .unreadCount(userCount)
+                .rabbitMQTransmissionStatus(true)
+                .finalTransmissionStatus(true)
+                .saveStatus(true)
+                .build();
 
         // 기존 RabbitMQ를 통한 실시간 메시지 전송 (온라인 구독자 대상) -> 온라인이면 sub 정보 남아있고, 오프라인이면 휘발돼서 상관없음
-        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
-        // log.info("RabbitMQ를 통해 채팅방 {}에 메시지 전송: {}", messageDto.chatRoomId(), messageDto);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + message.chatRoomId(), message, new CorrelationData(UUID.randomUUID().toString()));
 
         // 해당 채팅방의 모든 멤버 조회 (MySQL의 membership 테이블)
-        List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(messageDto.chatRoomId());
+        List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatroomIdOrderByUserScoreDesc(message.chatRoomId());
 
         // 각 멤버에 대해 온라인 상태 확인 후, 오프라인이면 FCM 푸시 처리 (현재는 로그 출력)
         for (ChatRoomMembership membership : memberships) {
             Long memberId = membership.getUser().getId();
             // 보낸 사용자는 제외
-            if (memberId.equals(messageDto.senderId())) {
+            if (memberId.equals(message.senderId())) {
                 continue;
             }
 
@@ -112,6 +126,8 @@ public class ChatService {
                 log.info("User {} is offline. FCM push triggered.", memberId); // TODO: FCM 전송 로직 추가
             }
         }
+
+        return message;
     }
 
     /**
@@ -262,6 +278,7 @@ public class ChatService {
                 .build();
     }
 
+    /*
     @Transactional
     public void readMessage(Long chatRoomId, List<Long> messageList) {
 
@@ -300,7 +317,7 @@ public class ChatService {
 
         // RabbitMQ에 읽음 상태 정보 전송
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, READ_STATUS_KEY_PREFIX + chatRoomId, readMessageResponseDto);
-    }
+    }*/
 
     /**
      * 메시지를 DB에 저장하고 Redis에 캐시.
@@ -702,9 +719,9 @@ public class ChatService {
                         .timestamp(LocalDateTime.now().toString())
                         .build())
                 .forEach(message -> {
-                    sendMessage(message); // 메시지 전송
+                    MessageDto messageDto = sendMessage(message);// 메시지 전송
                     log.info("Send a receipt message to chat room ID: {}", message.chatRoomId());
-                    saveMessages(message); // 메시지 저장
+                    saveMessages(messageDto); // 메시지 저장
                 });
     }
 
@@ -717,9 +734,9 @@ public class ChatService {
                 .content(imageUrl)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
-        sendMessage(message); // 메시지 전송
+        MessageDto messageDto = sendMessage(message);// 메시지 전송
         log.info("Send a image message to chat room ID: {}", message.chatRoomId());
-        saveMessages(message); // 메시지 저장
+        saveMessages(messageDto); // 메시지 저장
     }
 
     @Transactional(readOnly = true)
