@@ -107,7 +107,6 @@ public class ChatAPIController {
      * @param chatRoomId
      * @return 채팅방 가입을 위해 사용자에게 보여줄 채팅방 정보를 조회합니다.
      */
-    // TODO: Response 수정
     @GetMapping("/{chatRoomId}/detail")
     @Operation(summary = "채팅방 정보 조회", description = "특정 채팅방의 정보를 조회합니다.")
     public ApiResponse<ChatRoomDetailResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
