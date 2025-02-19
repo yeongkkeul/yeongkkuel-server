@@ -16,12 +16,14 @@ import com.umc.yeongkkeul.repository.UserRepository;
 import com.umc.yeongkkeul.repository.UuidRepository;
 import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
 import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
+import com.umc.yeongkkeul.web.dto.NotificationDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.UserRequestDto;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -34,6 +36,7 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
     private final CategoryRepository categoryRepository;
     private final UuidRepository uuidRepository;
     private final AmazonS3Manager amazonS3Manager;
+    private final NotificationService notificationService;
 
     // 유저의 지출 내역 생성
     @Override
@@ -70,6 +73,8 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
         expense.setImageUrl(expenseImageUrl);  // 이미지 URL 추가
 
         category.getExpenseList().add(expense);
+
+        updateConsecutiveNoSpendingDays(expense);
 
         // 유저의 지출 내역 저장
         return expenseRepository.save(expense);
@@ -163,6 +168,62 @@ public class ExpenseCommandServiceImpl extends ExpenseCommandService {
         user.setDayTargetExpenditure(request.getDayTargetExpenditure());
 
         return userRepository.save(user);
+    }
+
+    /**
+     * 무지출 일수 갱신 로직 트랜잭션
+     */
+    @Transactional
+    public void updateConsecutiveNoSpendingDays(Expense expense) {
+        Category category = expense.getCategory();
+        User user = expense.getUser();
+
+        if (expense.getIsNoSpending()) {
+            LocalDate currentDay = expense.getDay();
+            LocalDate yesterday = currentDay.minusDays(1);
+
+            // 어제 같은 카테고리에 '무지출'이 있었는지 조회
+            boolean hasNoSpendingYesterday = expenseRepository.existsNoSpendingExpense(
+                    user.getId(),
+                    category.getId(),
+                    yesterday
+            );
+
+            if (hasNoSpendingYesterday) {
+                // 연속 일수 +1
+                category.setConsecutiveNoSpendingDays(category.getConsecutiveNoSpendingDays() + 1);
+            } else {
+                // 새롭게 시작(연속 1일)
+                category.setConsecutiveNoSpendingDays(1);
+            }
+
+            // 5의 배수인지 체크
+            int consecutiveDays = category.getConsecutiveNoSpendingDays();
+            if (consecutiveDays % 5 == 0) {
+                // (5×k) 일 연속 달성
+                int k = consecutiveDays / 5;
+
+                // 보상 로직: 10×k
+                int reward = 10 * k;
+                user.setRewardBalance(user.getRewardBalance() + reward);
+                userRepository.save(user);
+
+                // 알림
+                notificationService.createNotification(
+                        user.getId(),
+                        new NotificationDetailRequestDto(
+                                "AWARD_NO_SPENDING_REWARDS",
+                                "[무지출 보상] " + category.getName() + " 카테고리 "
+                                        + consecutiveDays + "일 연속 무지출 달성으로 "
+                                        + reward + "P 획득!",
+                                null
+                        )
+                );
+            }
+        } else {
+            // 무지출이 아닐 경우 연속 일수 끊김
+            category.setConsecutiveNoSpendingDays(0);
+        }
     }
 
 }

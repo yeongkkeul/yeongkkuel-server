@@ -41,6 +41,9 @@ public class Category extends BaseEntity {
     @Column(name = "blue", nullable = false)
     private int blue;
 
+    @Column(name = "consecutive_no_spending_days")
+    private int consecutiveNoSpendingDays;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonManagedReference

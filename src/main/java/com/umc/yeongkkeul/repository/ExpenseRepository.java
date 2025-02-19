@@ -24,4 +24,18 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("SELECT e FROM Expense e WHERE e.user.id = :userId AND e.day = :yesterday")
     List<Expense> findYesterdayExpenseByUserId(@Param("userId") Long userId, @Param("yesterday") LocalDate yesterday);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END
+        FROM Expense e
+        WHERE e.user.id = :userId
+          AND e.category.id = :categoryId
+          AND e.day = :day
+          AND e.isNoSpending = true
+    """)
+    boolean existsNoSpendingExpense(
+            @Param("userId") Long userId,
+            @Param("categoryId") Long categoryId,
+            @Param("day") LocalDate day
+    );
 }
