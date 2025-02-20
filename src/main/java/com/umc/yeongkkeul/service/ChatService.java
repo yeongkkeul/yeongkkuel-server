@@ -388,6 +388,11 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
+        // 이미 가입 되어 있다면
+        if (chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId).isPresent()) {
+            throw new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_ALREADY_EXISTS);
+        }
+
         // 인원 추가
         chatRoom.setParticipationCount(chatRoom.getParticipationCount() + 1);
 
@@ -416,6 +421,10 @@ public class ChatService {
         // 탈퇴할 그룹 채팅방
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 이미 탈퇴되었다면
+        chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId)
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
 
         // 해당 유저가 방장인지 확인
         ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())

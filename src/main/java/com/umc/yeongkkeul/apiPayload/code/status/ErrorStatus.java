@@ -46,6 +46,7 @@ public enum ErrorStatus implements BaseErrorCode {
     // CHATROOMMEMBERSHIP
     _CHATROOMMEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "CHATMEMBERSHIP4004", "채팅방을 찾을 수 없습니다"),
     _CHATROOMMEMBERSHIP_NO_PERMISSION(HttpStatus.FORBIDDEN, "CHATMEMBERSHIP4005", "해당 채팅방의 방장이 아닙니다."),
+    _CHATROOMMEMBERSHIP_ALREADY_EXISTS(HttpStatus.FORBIDDEN, "CHATMEMBERSHIP4009", "이미 가입되어 있습니다."),
 
     // Notification
     _NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION4004", "해당 사용자의 알림을 찾을 수 없습니다."),
