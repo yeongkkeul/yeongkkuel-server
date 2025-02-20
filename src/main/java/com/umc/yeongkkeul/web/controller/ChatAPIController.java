@@ -69,6 +69,15 @@ public class ChatAPIController {
         return ApiResponse.onSuccess(chatService.synchronizationChatRoomsInfo(userId));
     }
 
+    @Operation(summary = "특정 채팅방 정보 동기화(조회)", description = "/topic/setting.room.{chatRoomId}로 부터 메시지를 받았으면 이 API를 호출합니다. chatRoomId를 가진 채팅방의 정보를 동기화합니다.")
+    @GetMapping("/{chatRoomId}")
+    public ApiResponse<ChatRoomInfoResponseDto> synchronizationChatRoomsInfo(@PathVariable Long chatRoomId) {
+
+        Long userId = toId(getCurrentUserId());
+
+        return ApiResponse.onSuccess(chatService.synchronizationChatRoomInfo(userId, chatRoomId));
+    }
+
     @Operation(summary = "특정 채팅방의 유저 정보 동기화(조회)", description = "특정 채팅방의 그룹 챌린저 정보를 가져옵니다. 순서는 나, 방장, 나머지 유저 이름순 입니다.")
     @GetMapping("/{chatRoomId}/users")
     public ApiResponse<ChatRoomUserInfos> synchronizationChatRoomUserInfos(@PathVariable Long chatRoomId) {

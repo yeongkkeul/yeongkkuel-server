@@ -250,6 +250,23 @@ public class ChatService {
                 .toList();
     }
 
+    public ChatRoomInfoResponseDto synchronizationChatRoomInfo(Long userId, Long chatRoomId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        return ChatRoomInfoResponseDto.builder()
+                .chatRoomId(chatRoom.getId())
+                .chatRoomTitle(chatRoom.getTitle())
+                .chatRoomRule(chatRoom.getTitle())
+                .chatRoomThumbnail(chatRoom.getImageUrl())
+                .participationCount(chatRoom.getParticipationCount())
+                .build();
+    }
+
     public ChatRoomUserInfos synchronizationChatRoomUsers(Long chatRoomId, Long userId) {
 
         List<Long> hostUserId = new ArrayList<>();
