@@ -317,7 +317,6 @@ public class ChatService {
                 }
 
                 if (messageDto.id() < recentClientMessageId && updateStatus == false) {
-                    System.out.println(messageDto.id() + "???!");
                     log.error("Start Message Read Error!");
                     return;
                 }
