@@ -166,7 +166,7 @@ public class KakaoLoginService {
 
         String redirectUrl = isExistTerms ? "/api/home" : "/api/auth/user-info";
 
-        Boolean isExistUser = userRepository.existsByEmail(email);
+        Boolean isExistUser = userRepository.existsByEmailAndOauthType(email,"KAKAO");
         String accessToken;
         String refreshToken;
 
