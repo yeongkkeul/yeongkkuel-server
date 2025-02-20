@@ -83,9 +83,11 @@ public class User extends BaseEntity {
     private boolean notificationAgreed;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<Reward> rewardList = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
 
     /*
@@ -136,5 +138,10 @@ public class User extends BaseEntity {
 
     public AgeGroup getAge() {
         return ageGroup;
+    }
+
+    public void addReward(Reward reward) {
+        this.rewardList.add(reward);
+        reward.setUser(this);
     }
 }

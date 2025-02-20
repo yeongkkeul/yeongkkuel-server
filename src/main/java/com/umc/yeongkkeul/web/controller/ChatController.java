@@ -114,7 +114,7 @@ public class ChatController {
                 .build();
 
         try {
-            chatService.exitChatRoom(messageDto.senderId(), roomId, messageDto);
+            chatService.exitChatRoom(messageDto.senderId(), roomId, exitMessageDto);
         } catch (AmqpException e) {
             log.error("The message was not sent by AmqpException {}.", e); return;
         }

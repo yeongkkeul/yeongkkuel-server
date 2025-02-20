@@ -43,6 +43,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -470,6 +472,11 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
 
+        // 이미 가입 되어 있다면
+        if (chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId).isPresent()) {
+            throw new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_ALREADY_EXISTS);
+        }
+
         // 인원 추가
         chatRoom.setParticipationCount(chatRoom.getParticipationCount() + 1);
 
@@ -498,6 +505,10 @@ public class ChatService {
         // 탈퇴할 그룹 채팅방
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        // 이미 탈퇴되었다면
+        chatRoomMembershipRepository.findByUserIdAndChatroomId(userId, chatRoomId)
+                .orElseThrow(() -> new ChatRoomMembershipHandler(ErrorStatus._CHATROOMMEMBERSHIP_NOT_FOUND));
 
         // 해당 유저가 방장인지 확인
         ChatRoomMembership chatRoomMembership = chatRoomMembershipRepository.findByUserIdAndChatroomId(user.getId(), chatRoom.getId())
@@ -647,11 +658,15 @@ public class ChatService {
      * 이미지 메시지 URL 리스트를 반환
      * messageType이 "IMAGE"인 경우, content에 저장된 S3 key를 이용해 URL을 생성
      */
-    public List<String> getChatRoomImageUrls(Long chatRoomId) {
+    public List<ImageChatResponseDTO> getChatRoomImageUrls(Long chatRoomId) {
         List<MessageDto> messages = getMessages(chatRoomId);
+
         return messages.stream()
                 .filter(m -> "IMAGE".equalsIgnoreCase(m.messageType()))
-                .map(m -> amazonS3Manager.getFileUrl(m.content()))
+                .map(m -> new ImageChatResponseDTO(
+                        m.id(),                              // 메시지 ID
+                        amazonS3Manager.getFileUrl(m.content())  // S3에 있는 실제 이미지 URL
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -659,15 +674,32 @@ public class ChatService {
      * 채팅방 내의 특정 이미지 메시지에 해당하는 파일을 S3에서 다운로드
      * S3DownloadResponse에는 파일 데이터와 원본 콘텐츠 타입이 포함
      */
+    @Transactional(readOnly = true)
     public AmazonS3Manager.S3DownloadResponse downloadChatImage(Long chatRoomId, Long messageId) {
         Optional<MessageDto> optionalImageMessage = getMessages(chatRoomId).stream()
-                .filter(m -> m.id().equals(messageId) && "IMAGE".equalsIgnoreCase(m.messageType()))
+                .filter(m -> {
+                    System.out.println("Comparing: m.id()=" + m.id() + " (" + m.id().getClass() + ") vs messageId=" + messageId + " (" + messageId.getClass() + ")");
+                    return m.id().equals(messageId) && "IMAGE".equalsIgnoreCase(m.messageType());
+                })
                 .findFirst();
         if (optionalImageMessage.isEmpty()) {
             throw new ChatRoomHandler(ErrorStatus._CHAT_IMAGE_NOT_FOUND);
         }
         MessageDto imageMessage = optionalImageMessage.get();
-        return amazonS3Manager.downloadFileWithMetadata(imageMessage.content());
+        String imageUrl = imageMessage.content();
+
+        // URL에서 S3 key 파싱 ("https://yeongkkeul-s3.s3.ap-northeast-2.amazonaws.com/chat/badb12fa-8d10-487b-9536-d43735f6f59f" -> "chat/badb12fa-8d10-487b-9536-d43735f6f59f")
+        // 다운로드시, S3의 키를 통해서 다운로드 해야함.
+        try {
+            URL url = new URL(imageUrl);
+            String key = url.getPath(); // "/chat/badb12fa-8d10-487b-9536-d43735f6f59f"
+            if (key.startsWith("/")) {
+                key = key.substring(1);
+            }
+            return amazonS3Manager.downloadFileWithMetadata(key);
+        } catch (MalformedURLException e) {
+            throw new ChatRoomHandler(ErrorStatus._CHAT_IMAGE_NOT_FOUND);
+        }
     }
 
     /**

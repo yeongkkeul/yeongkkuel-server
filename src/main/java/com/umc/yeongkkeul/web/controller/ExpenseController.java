@@ -2,13 +2,18 @@ package com.umc.yeongkkeul.web.controller;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.umc.yeongkkeul.apiPayload.ApiResponse;
+import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
+import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.mapping.ChatRoomMembership;
 import com.umc.yeongkkeul.repository.ChatRoomMembershipRepository;
+import com.umc.yeongkkeul.repository.ExpenseRepository;
+import com.umc.yeongkkeul.repository.UserRepository;
 import com.umc.yeongkkeul.service.ChatService;
 import com.umc.yeongkkeul.service.ExpenseCommandService;
 import com.umc.yeongkkeul.service.ExpenseQueryServiceImpl;
+import com.umc.yeongkkeul.service.NotificationService;
 import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
 import com.umc.yeongkkeul.web.dto.ExpenseResponseDTO;
 import com.umc.yeongkkeul.web.dto.MyPageInfoResponseDto;
@@ -24,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import com.umc.yeongkkeul.web.dto.chat.MessageDto;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,6 +45,7 @@ public class ExpenseController {
     private final ExpenseCommandService expenseCommandService;
     private final ExpenseQueryServiceImpl expenseQueryServiceImpl;
     private final ChatService chatService;
+    private final NotificationService notificationService;
 
     @PostMapping(value = "/api/expense", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @Operation(summary = "지출 내역 생성",description = "multipart/form-data로 보내야 합니다.")
@@ -51,6 +58,8 @@ public class ExpenseController {
         Expense response = expenseCommandService.createExpense(userId, request, expenseImage);
 
         chatService.sendReceiptChatRoom(response, userId);
+
+        notificationService.spendingNotification(userId, request.getDay());
 
         return ApiResponse.onSuccess(response);
     }
@@ -65,6 +74,9 @@ public class ExpenseController {
         Long userId = toId(getCurrentUserId());
 
         Expense response = expenseCommandService.updateExpense(userId, expenseId, request, expenseImage);
+
+        notificationService.spendingNotification(userId, request.getDay());
+
         return ApiResponse.onSuccess(response);
     }
 

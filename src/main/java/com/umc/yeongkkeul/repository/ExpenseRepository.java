@@ -1,5 +1,6 @@
 package com.umc.yeongkkeul.repository;
 
+import com.umc.yeongkkeul.domain.Category;
 import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +25,29 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("SELECT e FROM Expense e WHERE e.user.id = :userId AND e.day = :yesterday")
     List<Expense> findYesterdayExpenseByUserId(@Param("userId") Long userId, @Param("yesterday") LocalDate yesterday);
+
+    // 특정 유저의 특정 카테고리 + 특정 일자에 존재하는 모든 Expense 개수를 카운트
+    long countByUserAndCategoryAndDay(User user, Category category, LocalDate day);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END
+        FROM Expense e
+        WHERE e.user.id = :userId
+          AND e.category.id = :categoryId
+          AND e.day = :day
+          AND e.isNoSpending = true
+    """)
+
+    boolean existsNoSpendingExpense(
+            @Param("userId") Long userId,
+            @Param("categoryId") Long categoryId,
+            @Param("day") LocalDate day
+    );
+
+    // 특정 유저가 특정 날짜에 가지고 있는 지출(무지출 포함) 레코드 개수를 반환
+    long countByUserAndDay(User user, LocalDate day);
+
+    // 오늘 하루에 해당되는 지출
+    @Query("SELECT e FROM Expense e WHERE e.user.id = :userId AND e.day = :today")
+    List<Expense> findByUserIdAndExpenseDayToday(@Param("userId") Long userId, @Param("today") LocalDate today);
 }

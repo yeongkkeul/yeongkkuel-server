@@ -4,13 +4,16 @@ import com.umc.yeongkkeul.apiPayload.code.status.ErrorStatus;
 import com.umc.yeongkkeul.apiPayload.exception.handler.NotificationReadHandler;
 import com.umc.yeongkkeul.apiPayload.exception.handler.UserHandler;
 import com.umc.yeongkkeul.converter.NotificationConverter;
+import com.umc.yeongkkeul.domain.Expense;
 import com.umc.yeongkkeul.domain.Notification;
 import com.umc.yeongkkeul.domain.User;
 import com.umc.yeongkkeul.domain.enums.NotificationType;
 import com.umc.yeongkkeul.domain.mapping.NotificationRead;
+import com.umc.yeongkkeul.repository.ExpenseRepository;
 import com.umc.yeongkkeul.repository.NotificationReadRepository;
 import com.umc.yeongkkeul.repository.NotificationRepository;
 import com.umc.yeongkkeul.repository.UserRepository;
+import com.umc.yeongkkeul.web.dto.ExpenseRequestDTO;
 import com.umc.yeongkkeul.web.dto.NotificationAgreedRequestDto;
 import com.umc.yeongkkeul.web.dto.NotificationDetailRequestDto;
 import com.umc.yeongkkeul.web.dto.NotificationDetailsResponseDto;
@@ -22,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,6 +37,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationReadRepository notificationReadRepository;
     private final UserRepository userRepository;
+    private final ExpenseRepository expenseRepository;
 
     private final int NOTIFICATION_PAGING_SIZE = 30; // 한 페이지 당 최대 30개를 조회
 
@@ -135,5 +140,45 @@ public class NotificationService {
     public Integer raedAllNotifications(Long userId) {
 
         return notificationReadRepository.setNotificationUnreadToRead(userId);
+    }
+
+    @Transactional
+    public void spendingNotification(Long userId, LocalDate expenseday){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        // 사용자 하루 목표 지출액이 설정되어 있지 않다면 로직 종료
+        if (user.getDayTargetExpenditure() == null) {
+            return;
+        }
+
+        // 오늘 날짜와 일치하지 않는 경우, 로직 종료
+        if (!expenseday.equals(LocalDate.now())) {
+            return;
+        }
+
+        // 오늘 날짜에 "하루 목표 지출액 초과" 알림이 이미 생성되었는지 확인하기
+        boolean notificationExists = notificationReadRepository.existsExceedDailySpendingGoalNotification(userId, LocalDate.now());
+
+        // 오늘 "하루 목표 지출액 초과" 알림이 이미 생성된 경우, 중복 생성 X
+        if (notificationExists) {
+            return;
+        }
+
+        List<Expense> expenditures = expenseRepository.findByUserIdAndExpenseDayToday(userId, expenseday);
+
+        int totalSpending = expenditures.stream().mapToInt(Expense::getAmount).sum();
+
+        // 오늘 사용한 총 지출액 > 하루 목표 지출액 인 경우
+        if (totalSpending > user.getDayTargetExpenditure()) {
+            createNotification(
+                    user.getId(),
+                    new NotificationDetailRequestDto(
+                            "EXCEED_DAILY_SPENDING_GOAL",
+                            "하루 목표 지출액 초과",
+                            null
+                    )
+            );
+        }
     }
 }

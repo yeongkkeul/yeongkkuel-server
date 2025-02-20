@@ -1,5 +1,7 @@
 package com.umc.yeongkkeul.web.dto.chat;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -10,6 +12,7 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record MessageDto(
+        @JsonSerialize(using = ToStringSerializer.class) // Long을 String으로 직렬화 Long으로 진행시 서버 내부 로직은 괜찮지만 프론트 소통과정에서 유실 발생.
         Long id, // 메시지 ID
         Long chatRoomId, // 목적지(전달할 그룹 채팅방) ID
         Long senderId, // 발신인 ID
