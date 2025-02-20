@@ -78,6 +78,8 @@ public class ChatService {
 
 
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
+    private final String STOMP_SETTING_PREFIX = "/topic/setting.room.";
+    private final String STOMP_READ_PREFIX = "/topic/read.room.";
 
     @Value("${rabbitmq.exchange.name}")
     private String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
@@ -142,6 +144,7 @@ public class ChatService {
     private void enterMessage(MessageDto messageDto) {
 
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+        messagingTemplate.convertAndSend(STOMP_SETTING_PREFIX + messageDto.chatRoomId(), new ChatSettingResponseDto(true));
     }
 
     /**
@@ -153,6 +156,7 @@ public class ChatService {
     public void exitMessage(MessageDto messageDto) {
 
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+        messagingTemplate.convertAndSend(STOMP_SETTING_PREFIX + messageDto.chatRoomId(), new ChatSettingResponseDto(true));
     }
 
     /**
@@ -250,6 +254,23 @@ public class ChatService {
                 .toList();
     }
 
+    public ChatRoomInfoResponseDto synchronizationChatRoomInfo(Long userId, Long chatRoomId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserHandler(ErrorStatus._USER_NOT_FOUND));
+
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatRoomHandler(ErrorStatus._CHATROOM_NOT_FOUND));
+
+        return ChatRoomInfoResponseDto.builder()
+                .chatRoomId(chatRoom.getId())
+                .chatRoomTitle(chatRoom.getTitle())
+                .chatRoomRule(chatRoom.getTitle())
+                .chatRoomThumbnail(chatRoom.getImageUrl())
+                .participationCount(chatRoom.getParticipationCount())
+                .build();
+    }
+
     public ChatRoomUserInfos synchronizationChatRoomUsers(Long chatRoomId, Long userId) {
 
         List<Long> hostUserId = new ArrayList<>();
@@ -331,7 +352,7 @@ public class ChatService {
                             .build();
 
                     // RabbitMQ에 읽음 상태 정보 전송
-                    messagingTemplate.convertAndSend("/topic/read.room." + chatRoomId, readMessageResponseDto);
+                    messagingTemplate.convertAndSend(STOMP_READ_PREFIX + chatRoomId, readMessageResponseDto);
 
                     return;
                 }
@@ -534,7 +555,6 @@ public class ChatService {
             chatRoomMembershipRepository.deleteChatRoomMemberships(chatRoom.getId()); // 모든 연관 엔티티 삭제
             chatRoomRepository.delete(chatRoom);
 
-            // TODO: 클라이언트에게 특정 타입의 메시지를 보내고 이 타입을 받으면 해당 채팅방의 구독을 취소
         } else {
             // 방장이 아니라면 관계 테이블만 삭제
             chatRoomMembershipRepository.delete(chatRoomMembership);
@@ -773,7 +793,8 @@ public class ChatService {
         }
 
         // 수정 내용 저장
-         chatRoomRepository.save(chatRoom);
+        messagingTemplate.convertAndSend(STOMP_SETTING_PREFIX + chatRoomId, new ChatSettingResponseDto(true));
+        chatRoomRepository.save(chatRoom);
 
         return chatRoom.getId();
     }
