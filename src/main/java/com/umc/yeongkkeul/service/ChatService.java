@@ -534,7 +534,6 @@ public class ChatService {
             chatRoomMembershipRepository.deleteChatRoomMemberships(chatRoom.getId()); // 모든 연관 엔티티 삭제
             chatRoomRepository.delete(chatRoom);
 
-            // TODO: 클라이언트에게 특정 타입의 메시지를 보내고 이 타입을 받으면 해당 채팅방의 구독을 취소
         } else {
             // 방장이 아니라면 관계 테이블만 삭제
             chatRoomMembershipRepository.delete(chatRoomMembership);
