@@ -50,7 +50,7 @@ public class GoogleLoginService {
 
         Boolean isExistTerms = userTermsRepository.existsByUser_EmailAndUser_OauthType(googleInfoResponseDto.getEmail(),"GOOGLE");
 
-        Boolean isExistUser = userRepository.existsByEmail(googleInfoResponseDto.getEmail());
+        Boolean isExistUser = userRepository.existsByEmailAndOauthType(googleInfoResponseDto.getEmail(),"GOOGLE");
         String accessToken;
         String refreshToken;
 
