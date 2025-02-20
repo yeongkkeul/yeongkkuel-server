@@ -78,6 +78,8 @@ public class ChatService {
 
 
     private final String ROUTING_PREFIX_KEY = "chat.room."; // ROUTING KEY 접미사
+    private final String STOMP_SETTING_PREFIX = "/topic/setting.room.";
+    private final String STOMP_READ_PREFIX = "/topic/read.room.";
 
     @Value("${rabbitmq.exchange.name}")
     private String CHAT_EXCHANGE_NAME; // RabbitMQ Exchange 이름
@@ -142,6 +144,7 @@ public class ChatService {
     private void enterMessage(MessageDto messageDto) {
 
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+        messagingTemplate.convertAndSend(STOMP_SETTING_PREFIX + messageDto.chatRoomId(), new ChatSettingResponseDto(true));
     }
 
     /**
@@ -153,6 +156,7 @@ public class ChatService {
     public void exitMessage(MessageDto messageDto) {
 
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE_NAME, ROUTING_PREFIX_KEY + messageDto.chatRoomId(), messageDto, new CorrelationData(UUID.randomUUID().toString()));
+        messagingTemplate.convertAndSend(STOMP_SETTING_PREFIX + messageDto.chatRoomId(), new ChatSettingResponseDto(true));
     }
 
     /**
@@ -348,7 +352,7 @@ public class ChatService {
                             .build();
 
                     // RabbitMQ에 읽음 상태 정보 전송
-                    messagingTemplate.convertAndSend("/topic/read.room." + chatRoomId, readMessageResponseDto);
+                    messagingTemplate.convertAndSend(STOMP_READ_PREFIX + chatRoomId, readMessageResponseDto);
 
                     return;
                 }
@@ -789,7 +793,8 @@ public class ChatService {
         }
 
         // 수정 내용 저장
-         chatRoomRepository.save(chatRoom);
+        messagingTemplate.convertAndSend(STOMP_SETTING_PREFIX + chatRoomId, new ChatSettingResponseDto(true));
+        chatRoomRepository.save(chatRoom);
 
         return chatRoom.getId();
     }
