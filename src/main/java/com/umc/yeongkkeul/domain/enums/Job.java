@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum Job {
+    //sas
     STUDENT("학생"),
     EMPLOYEE("직장인"),
     HOMEMAKER("주부"),
